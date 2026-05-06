@@ -3,6 +3,17 @@ EasyStore MCP Server — 設定模組
 從環境變數讀取 API 認證資訊，不接受硬編碼。
 """
 import os
+from pathlib import Path
+
+# 從專案根目錄的 .env 檔案載入環境變數
+try:
+    from dotenv import load_dotenv
+    env_file = Path(__file__).parent.parent / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
+except ImportError:
+    # python-dotenv 未安裝，直接使用系統環境變數
+    pass
 
 EASYSTORE_SHOP_URL: str = os.environ.get("EASYSTORE_SHOP_URL", "").rstrip("/")
 EASYSTORE_ACCESS_TOKEN: str = os.environ.get("EASYSTORE_ACCESS_TOKEN", "")
