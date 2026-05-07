@@ -9,6 +9,9 @@ httpx>=0.24.0
 # 數據驗證
 pydantic>=2.0.0
 
+# 環境變數管理
+python-dotenv>=1.0.0
+
 # 開發工具（選填）
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
