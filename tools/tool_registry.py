@@ -5,17 +5,15 @@ tool_registry.py — 工具統一註冊
 寫入工具需設定環境變數 ENABLE_WRITE_TOOLS=true 才會載入。
 """
 
-import os
 from mcp.server.fastmcp import FastMCP
 
+from config.settings import ENABLE_WRITE_TOOLS
 from tools.analytics_tools import register_analytics_tools
 from tools.order_tools import register_order_tools
 from tools.product_tools import register_product_tools
 from tools.customer_tools import register_customer_tools
 from tools.settings_tools import register_settings_tools
 from tools.storefront_tools import register_storefront_tools
-
-ENABLE_WRITE_TOOLS = os.environ.get("ENABLE_WRITE_TOOLS", "false").lower() == "true"
 
 
 def register_all_tools(mcp: FastMCP) -> int:
