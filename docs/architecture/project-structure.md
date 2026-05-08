@@ -1,63 +1,70 @@
-# mcp-easystore — 專案結構規劃
+# mcp-easystore — 專案結構
 
-> **參考來源**：mcp-shopline 架構
-> **調整原則**：
-> 1. EasyStore API 特性（REST + `.json` suffix，無 PATCH，有 `count` 端點）
-> 2. 去除 Shopline 有但 EasyStore 無的域（Promotions、Return Order、Conversations、Gifts、Addon Products、Media、Reviews、Purchase Orders）
-> 3. 新增 EasyStore 獨有域（Storefront 建設層、Checkouts、Collects、Curls）
-> 4. 寫入工具僅規劃，預設不載入（需明確啟用，降低誤操作風險）
+> **更新日期**：2026-05-08
+> **內容**：上半部為當前實際結構，下半部為各工具的端點對照表（規劃／實作參考）。
 
 ---
 
-## 專案結構
+## 當前專案結構
 
 ```
 mcp-easystore/
+├── README.md
+├── LICENSE
+├── SKILL.md                         # Claude skill 定義（easystore-analyst）
+├── CLAUDE.md                        # Claude Code session 進入點說明
 ├── mcp_server.py                    # MCP 伺服器入口（stdio JSON-RPC 2.0）
-├── .mcp.json                        # Claude Code MCP 自動偵測設定
-├── .env.example                     # 環境變數範本
+├── requirements.txt
+├── .env / .env.example / .gitignore
 │
 ├── config/
-│   └── settings.py                  # API 設定（Token / Shop URL 從環境變數讀取）
+│   ├── __init__.py
+│   └── settings.py                  # 環境變數載入、API 設定
 │
-├── tools/
-│   │
-│   ├── base_tool.py                 # 共用 HTTP client（重試、分頁、錯誤處理）
-│   │
-│   │   ── 讀取工具（Read Tools）──
-│   │
-│   ├── analytics_tools.py           # 數據分析讀取工具（~12 個）
-│   ├── order_tools.py               # 訂單讀取工具（~10 個）
-│   ├── product_tools.py             # 商品讀取工具（~12 個）
-│   ├── customer_tools.py            # 客戶讀取工具（~10 個）
-│   ├── settings_tools.py            # 商店設定讀取工具（~14 個）
-│   ├── storefront_tools.py          # Storefront 建設讀取工具（~8 個）
-│   ├── checkout_tools.py            # 結帳流程讀取工具（~4 個）
-│   │
-│   │   ── 寫入工具（Write Tools，預設不載入）──
-│   │
-│   ├── writes/
-│   │   ├── order_writes.py          # 訂單寫入工具（~8 個）
-│   │   ├── product_writes.py        # 商品寫入工具（~14 個）
-│   │   ├── customer_writes.py       # 客戶寫入工具（~12 個）
-│   │   ├── storefront_writes.py     # Storefront 寫入工具（~12 個）
-│   │   └── settings_writes.py       # 設定寫入工具（~9 個）
-│   │
-│   └── tool_registry.py             # 工具統一註冊（讀寫分離控制）
+├── tools/                           # MCP 工具實作（讀取工具皆已上線）
+│   ├── __init__.py
+│   ├── base_tool.py                 # 共用 HTTP client
+│   ├── tool_registry.py             # 統一註冊（讀寫分離控制）
+│   ├── analytics_tools.py           # 數據分析（9 個）
+│   ├── order_tools.py               # 訂單（8 個）
+│   ├── product_tools.py             # 商品（10 個）
+│   ├── customer_tools.py            # 客戶（10 個）
+│   ├── settings_tools.py            # 商店設定（13 個）
+│   └── storefront_tools.py          # Storefront 建設（7 個）
+│   # 寫入工具（tools/writes/）規劃中，預設不載入；ENABLE_WRITE_TOOLS=true 才啟用
+│
+├── scripts/                         # 一次性腳本：連線測試、優化驗證
+│   ├── start_mcp.sh
+│   ├── check_env.py
+│   ├── auth/test_connection.py
+│   ├── test_fields_optimization.py
+│   ├── test_revenue_optimization.py
+│   └── verify_fields_support.py
 │
 ├── tests/
-│   ├── test_read_tools.py           # 讀取工具端對端測試
-│   ├── test_write_tools.py          # 寫入工具端對端測試
-│   └── fixtures/
-│       └── mock_responses.py        # API 回應 mock 資料
+│   └── test_orders.py
 │
-└── scripts/
-    ├── auth/
-    │   ├── test_connection.py        # API 連線驗證
-    │   └── inspect_data_structure.py # API 回應結構探查
-    └── audit/
-        └── scope_check.py           # Token scope 稽核
+└── docs/
+    ├── setup/                       # 環境變數、Cowork 設定
+    ├── api-reference/               # EasyStore / Shopline API 端點清單
+    ├── architecture/                # 本檔
+    ├── optimization/                # 規劃中的優化分析、checklist、實施指南
+    └── archive/                     # 已完成的測試結果與實施報告
 ```
+
+### 工具總數（讀取）
+
+| 模組 | 數量 |
+|------|-----|
+| analytics | 9 |
+| orders | 8 |
+| products | 10 |
+| customers | 10 |
+| settings | 13 |
+| storefront | 7 |
+| **合計** | **57** |
+
+寫入工具規劃約 55 個（`tools/writes/`），目前未實作；`tool_registry.py` 已預留載入點，需 `ENABLE_WRITE_TOOLS=true`。
 
 ---
 
