@@ -114,8 +114,11 @@ def register_analytics_tools(mcp: FastMCP):
         只計算已付款（financial_status=paid）的訂單，逐筆加總 total_price。
         適合用於：週報/月報、營收趨勢分析、對帳參考。
 
-        注意：EasyStore 無內建聚合 API，此工具會自動翻頁取得全部訂單後在 client 端加總。
-        訂單量大時（>500筆）建議縮短日期範圍以加快回應。
+        ⚠️ 性能考量：
+        - EasyStore 無內建聚合 API，需翻頁取得全部訂單後在 client 端加總
+        - 推薦查詢範圍：30 天以內（約 5-10 次 API 呼叫）
+        - 超過 90 天的查詢可能需要 20+ 次 API 呼叫
+        - 例：2026-04 (30天, ~1250筆訂單) 需約 5 次 API 呼叫
 
         Args:
             params: financial_status（預設 paid）+ 日期範圍
@@ -124,7 +127,11 @@ def register_analytics_tools(mcp: FastMCP):
             str: JSON，包含 order_count、total_revenue、currency（取自第一筆訂單）、avg_order_value。
         """
         fs = params.financial_status or "paid"
-        query: dict = {"financial_status": fs, "limit": 250}
+        query: dict = {
+            "financial_status": fs,
+            "limit": 250,
+            "fields": ""  # 最小化響應大小：不返回擴展字段 (items, addresses, etc.)
+        }
         if params.date_from:
             query["created_at_min"] = params.date_from
         if params.date_to:

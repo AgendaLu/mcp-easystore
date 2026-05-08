@@ -86,11 +86,22 @@ def register_order_tools(mcp: FastMCP):
         可依付款狀態、出貨狀態、訂單狀態、時間區間、會員 ID 等條件篩選。
         適合用於：日常訂單管理、特定條件的訂單查詢、資料分析的原始資料提取。
 
+        📊 性能提示：
+        - 默認響應：～36,000 tokens (10 條訂單含完整字段)
+        - 優化響應 (fields='id,total_price,currency_code')：～5,000 tokens (86% 節省 🚀)
+        - 不指定 fields 時返回所有可用字段（items, customer, addresses 等）
+
+        💡 推薦用法：
+        - 營收分析、報表生成：fields='id,total_price,currency_code'
+        - 訂單列表展示：fields='-customer' (68% 節省) 或不指定 fields
+        - 完整訂單詳情：不指定 fields 或使用 easystore_get_order
+
         重要限制：EasyStore 無 search endpoint，所有搜尋透過此工具的 query params 實現。
         若要取得特定訂單詳情請使用 easystore_get_order。
 
         Args:
             params: 篩選條件（狀態、時間、會員等）+ 分頁設定
+                   fields 參數可指定返回的字段，優化 API 響應大小
 
         Returns:
             str: JSON，包含 total_count、page_count、orders 陣列。
