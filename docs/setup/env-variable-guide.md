@@ -42,8 +42,8 @@ EasyStore MCP Server 需要以下環境變數：
 {
   "description": "本地機器配置 - 包含敏感資訊，不提交到 Git",
   "env": {
-    "EASYSTORE_SHOP_URL": "https://glamglow.easy.co",
-    "EASYSTORE_ACCESS_TOKEN": "e8b321b8d3238787dc2c74ca69559db6",
+    "EASYSTORE_SHOP_URL": "https://yourshop.easy.co",
+    "EASYSTORE_ACCESS_TOKEN": "your_token_here",
     "ENABLE_WRITE_TOOLS": "false"
   },
   "mcpServers": {
@@ -74,8 +74,8 @@ cp .env.example .env.local
 編輯 `.env.local`：
 
 ```
-EASYSTORE_SHOP_URL=https://glamglow.easy.co
-EASYSTORE_ACCESS_TOKEN=e8b321b8d3238787dc2c74ca69559db6
+EASYSTORE_SHOP_URL=https://yourshop.easy.co
+EASYSTORE_ACCESS_TOKEN=your_token_here
 ENABLE_WRITE_TOOLS=false
 ```
 
@@ -89,8 +89,8 @@ ENABLE_WRITE_TOOLS=false
 在 shell 中設定：
 
 ```bash
-export EASYSTORE_SHOP_URL=https://glamglow.easy.co
-export EASYSTORE_ACCESS_TOKEN=e8b321b8d3238787dc2c74ca69559db6
+export EASYSTORE_SHOP_URL=https://yourshop.easy.co
+export EASYSTORE_ACCESS_TOKEN=your_token_here
 export ENABLE_WRITE_TOOLS=false
 ```
 
@@ -115,8 +115,8 @@ python3 scripts/check_env.py
 
 1️⃣  系統環境變數
 ------------------------------------------------------------
-  ✓ EASYSTORE_SHOP_URL: https://glamglow.easy.co
-  ✓ EASYSTORE_ACCESS_TOKEN: e8b321b8d3238787dc2c74ca69559db6
+  ✓ EASYSTORE_SHOP_URL: https://yourshop.easy.co
+  ✓ EASYSTORE_ACCESS_TOKEN: your_token_here
   ✓ ENABLE_WRITE_TOOLS: false
 
 ...
@@ -181,6 +181,56 @@ cp .env.example .env.local  # ✓ 提交 .env.example，不提交 .env.local
 # 驗證敏感信息不在 Git 中
 git status  # ✓ 確保 .env.local 不被追蹤
 ```
+
+## ⚠️ 重要：Claude Desktop（Cowork）的 MCP 設定位置
+
+> **教訓**：如果在 Cowork 中 MCP server 收不到環境變數，很可能是因為 Claude Desktop 有自己獨立的 MCP 設定檔，**不會**讀取專案的 `.claude/settings.json`。
+
+Claude Desktop 的 MCP server 設定檔位於：
+
+```
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+需要把環境變數直接寫在這裡的 `env` 區塊，才能確保 Cowork 啟動 MCP server 時正確注入：
+
+```json
+{
+  "mcpServers": {
+    "easystore": {
+      "command": "/path/to/mcp-easystore/.venv/bin/python3",
+      "args": ["/path/to/mcp-easystore/mcp_server.py"],
+      "env": {
+        "EASYSTORE_SHOP_URL": "https://yourshop.easy.co",
+        "EASYSTORE_ACCESS_TOKEN": "your_token_here",
+        "ENABLE_WRITE_TOOLS": "false",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
+```
+
+> ⚠️ 注意：`command` 必須用 `.venv/bin/python3` 的絕對路徑，否則找不到已安裝的套件。
+
+**或**，透過 terminal 用 `claude mcp add` 指令安裝（效果相同，會自動寫入設定檔）：
+
+```bash
+claude mcp remove easystore
+
+claude mcp add easystore \
+  -e EASYSTORE_SHOP_URL=https://yourshop.easy.co \
+  -e EASYSTORE_ACCESS_TOKEN=your_token_here \
+  -e ENABLE_WRITE_TOOLS=false \
+  -e PYTHONUNBUFFERED=1 \
+  -- /path/to/mcp-easystore/.venv/bin/python3 \
+  /path/to/mcp-easystore/mcp_server.py
+
+# 確認連線
+claude mcp list
+```
+
+---
 
 ## 🐛 故障排除
 
