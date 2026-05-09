@@ -48,6 +48,7 @@ description: |
 | 各分類商品數量 | `easystore_get_collection_product_count` |
 | 金流使用情況 | `easystore_get_gateway_usage` |
 | Webhook 健康檢查 | `easystore_get_webhook_health` |
+| RFM 顧客分群原始資料 | `easystore_get_rfm_orders` |
 
 ### 細節查詢 → 使用對應資源工具
 
@@ -198,4 +199,19 @@ EasyStore 無伺服器端聚合 API，大量分析需要 client-side 處理：
 3. 呼叫 easystore_list_orders(customer_id=..., limit=50)
    → 取得歷史訂單
 4. 整合呈現消費摘要
+```
+
+**用戶：「幫我做 RFM 顧客分群」**
+
+```
+1. 呼叫 easystore_get_store_info → 確認幣別與時區
+2. 呼叫 easystore_get_order_summary(days=180) → 確認訂單規模
+   若 total_orders > 2000，提醒縮短時間範圍
+3. 分頁呼叫 easystore_get_rfm_orders(days=180, page=N, limit=50)
+   → 專用工具，只回傳 id/customer_id/customer_email/total_price/created_at
+   → 比 easystore_list_orders 預設少約 85% token
+4. Claude 端以 customer_id 彙總：最後購買日、購買次數、累計消費
+5. R/F/M 各打 1–5 分 → 分群 → 輸出人數表格與行銷建議
+
+⚠️ 詳細說明見 docs/optimization/rfm-analysis-guide.md
 ```

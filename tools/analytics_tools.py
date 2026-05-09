@@ -37,6 +37,14 @@ class CollectionStatsInput(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     collection_id: Optional[int] = Field(None, description="指定分類 ID（不填則查全部）")
 
+class GetRFMOrdersInput(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
+    days: Optional[int] = Field(None, ge=1, le=365, description="過去幾天，例如 180（與 date_from/date_to 二選一）")
+    date_from: Optional[str] = Field(None, description="開始日期 YYYY-MM-DD")
+    date_to: Optional[str] = Field(None, description="結束日期 YYYY-MM-DD")
+    page: int = Field(default=1, ge=1, description="頁碼，從 1 開始")
+    limit: int = Field(default=50, ge=1, le=250, description="每頁筆數，建議 50–100")
+
 
 def _resolve_dates(date_from: Optional[str], date_to: Optional[str], days: Optional[int]) -> tuple[str, str]:
     """解析日期參數，回傳 (created_at_min, created_at_max)。"""
@@ -372,4 +380,66 @@ def register_analytics_tools(mcp: FastMCP):
                 {"id": w.get("id"), "topic": w.get("topic"), "url": w.get("url")}
                 for w in webhooks
             ],
+        })
+
+    @mcp.tool(
+        name="easystore_get_rfm_orders",
+        annotations={"readOnlyHint": True, "destructiveHint": False}
+    )
+    async def easystore_get_rfm_orders(params: GetRFMOrdersInput) -> str:
+        """取得 RFM 分析專用的已付款訂單資料（最小化 token 消耗）。
+
+        固定只回傳 RFM 計算所需的五個欄位：
+        - id：訂單 ID
+        - customer_id：會員 ID（訪客結帳為 null）
+        - customer_email：客戶 email
+        - total_price：訂單金額
+        - created_at：下單時間
+
+        相比 easystore_list_orders 預設回傳，token 消耗減少約 85%。
+        固定篩選 financial_status=paid，確保只計算實際付款訂單。
+
+        ⚠️ 建議流程：
+        1. 先用 easystore_get_order_summary 確認訂單總數與 page_count
+        2. 若 total_count > 2000，建議縮短時間範圍（days=90）
+        3. 逐頁取回：page=1, 2, 3... 直到 page >= page_count
+        4. 以 customer_id 彙總，計算 R（距今天數）、F（次數）、M（金額）
+
+        Args:
+            params: 時間範圍（days 或 date_from/date_to）+ 分頁設定
+
+        Returns:
+            str: JSON，包含 total_count、page_count、page、period、orders 陣列。
+        """
+        min_dt, max_dt = _resolve_dates(params.date_from, params.date_to, params.days)
+
+        query: dict = {
+            "financial_status": "paid",
+            "page": params.page,
+            "limit": params.limit,
+        }
+        if min_dt:
+            query["created_at_min"] = min_dt
+        if max_dt:
+            query["created_at_max"] = max_dt
+
+        data = await api_get("orders", query)
+        if isinstance(data, str):
+            return data
+
+        _RFM_FIELDS = {"id", "customer_id", "customer_email", "total_price", "created_at"}
+        slim_orders = [
+            {k: v for k, v in order.items() if k in _RFM_FIELDS}
+            for order in data.get("orders", [])
+        ]
+
+        total_count = data.get("total_count", 0)
+        page_count = -(-total_count // params.limit) if total_count > 0 else 1  # ceiling division
+
+        return to_json({
+            "total_count": total_count,
+            "page": params.page,
+            "page_count": page_count,
+            "period": {"from": min_dt or "all", "to": max_dt or "now"},
+            "orders": slim_orders,
         })

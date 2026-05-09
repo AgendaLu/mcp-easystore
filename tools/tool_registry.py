@@ -30,7 +30,7 @@ def register_all_tools(mcp: FastMCP) -> int:
     register_storefront_tools(mcp)
 
     read_count = (
-        9   # analytics
+        10  # analytics
         + 8   # orders
         + 10  # products
         + 10  # customers
