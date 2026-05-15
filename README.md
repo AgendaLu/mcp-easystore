@@ -2,14 +2,15 @@
 
 EasyStore 電商平台的 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 伺服器。
 
-讓 Claude 透過自然語言直接查詢 EasyStore 商店資料，無需手動導出報表。支援訂單、商品、顧客、營收、庫存、金流等 57+ 讀取工具。
+讓 Claude 透過自然語言直接查詢並操作 EasyStore 商店資料。支援 **58 個讀取工具** + **41 個寫入工具**（選用），涵蓋訂單、商品、顧客、營收、庫存、金流等全域操作。
 
 ## 功能概覽
 
-- **訂單分析**：依狀態、付款、時間篩選，計算營收、出貨進度
-- **顧客洞察**：顧客清單、積分查詢、**RFM 分群分析**
-- **商品管理**：商品列表、庫存概況、分類統計
+- **訂單管理**：查詢、取消、退款、建立出貨紀錄
+- **顧客分群**：RFM 分析 → 自動分群 → 批次更新群組（讀寫閉環）
+- **商品操作**：查詢庫存、批次更新規格價格、管理分類
 - **店務設定**：金流方式、Webhook 健康檢查、商店基本資訊
+- **前台內容**：頁面、導覽、轉址規則管理
 - **Token 優化**：所有工具針對最小化 token 消耗設計
 
 ## 快速開始
@@ -31,6 +32,9 @@ cp .env.example .env
 ```env
 EASYSTORE_SHOP_URL=https://your-shop.myeasystore.com
 EASYSTORE_ACCESS_TOKEN=your_access_token
+
+# 啟用寫入工具（預設關閉）
+# ENABLE_WRITE_TOOLS=true
 ```
 
 完整說明見 [docs/setup/env-variable-guide.md](docs/setup/env-variable-guide.md)。
@@ -56,9 +60,11 @@ EASYSTORE_ACCESS_TOKEN=your_access_token
 
 完整設定路徑說明見 [docs/setup/](docs/setup/)。
 
-## 工具一覽
+---
 
-### 分析工具（analytics_tools）— 10 個
+## 讀取工具（58 個，預設全部載入）
+
+### 分析工具（analytics_tools）— 11 個
 
 | 工具 | 說明 |
 |------|------|
@@ -71,7 +77,8 @@ EASYSTORE_ACCESS_TOKEN=your_access_token
 | `easystore_get_product_inventory_summary` | 商品庫存概況 |
 | `easystore_get_collection_product_count` | 各分類商品數量 |
 | `easystore_get_gateway_usage` | 已啟用金流方式 |
-| `easystore_get_rfm_orders` | RFM 分析專用訂單資料（85% token 節省） |
+| `easystore_get_webhook_health` | Webhook 健康狀態 |
+| `easystore_get_rfm_orders` | RFM 分析專用訂單資料（~86% token 節省） |
 
 ### 訂單工具（order_tools）— 8 個
 
@@ -85,35 +92,90 @@ EASYSTORE_ACCESS_TOKEN=your_access_token
 
 `list_customers` / `search_customers` / `get_customer` / `get_customer_points` / `list_customer_addresses` / `get_customer_address` / `list_customer_attributes` / `get_customer_attribute` / `list_groups` / `get_group` / `list_group_customers`
 
-### 設定工具（settings_tools）— 13 個
+### 設定工具（settings_tools）— 12 個
 
-金流、Webhook、Metafield 相關讀取工具。
+`list_webhooks` / `get_webhook` / `count_webhooks` / `list_curls` / `get_curl` / `count_curls` / `list_metafields` / `get_metafield` / `count_metafields` / `list_locations` / `get_location` / `list_gateways` / `list_es_gateways` / `get_customer_attribute`
 
-### 店面工具（storefront_tools）— 7 個
+### 前台工具（storefront_tools）— 7 個
 
-頁面、導覽列、Script Tag、Snippet、Redirect 等讀取工具。
+`list_pages` / `get_page` / `list_navigations` / `count_navigations` / `list_redirects` / `list_snippets` / `list_script_tags`
 
-## RFM 顧客分群
+---
 
-使用 `easystore_get_rfm_orders` 搭配分步驟查詢，對顧客進行 Recency / Frequency / Monetary 分群：
+## 寫入工具（41 個，需 `ENABLE_WRITE_TOOLS=true`）
 
-```
-1. easystore_get_order_summary(days=180)              → 確認訂單規模
-2. easystore_get_rfm_orders(days=180, limit=100, page=N)  → 分頁取回最小欄位
-3. Claude 端彙總 → 分群輸出
-```
-
-**Token 效能**：`easystore_get_rfm_orders` 透過 API `fields` 參數只取 5 個必要欄位，相比 `easystore_list_orders` 預設回傳節省 ~86% token。建議使用 `limit=100`（預設）至 `limit=250` 減少 API 呼叫次數。
-
-詳見 [docs/optimization/rfm-analysis-guide.md](docs/optimization/rfm-analysis-guide.md)。
-
-## 寫入工具（選用）
-
-預設不載入，需設定 `ENABLE_WRITE_TOOLS=true` 才啟用，避免誤操作。
+預設不載入，避免分析任務中意外觸發修改。設定後重啟伺服器即可啟用。
 
 ```env
 ENABLE_WRITE_TOOLS=true
 ```
+
+### 訂單操作（order_writes）— 6 個
+
+| 工具 | 說明 |
+|------|------|
+| `easystore_cancel_order` | ⚠️ 取消訂單 |
+| `easystore_refund_order` | 退款（指定金額） |
+| `easystore_update_order` | 更新訂單備注 |
+| `easystore_create_fulfillment` | 建立出貨紀錄（填入追蹤號） |
+| `easystore_update_fulfillment` | 更新物流追蹤號 |
+| `easystore_cancel_fulfillment` | ⚠️ 取消出貨紀錄 |
+
+### 顧客與分群（customer_writes）— 9 個
+
+| 工具 | 說明 |
+|------|------|
+| `easystore_update_customer` | 更新顧客資料 |
+| `easystore_adjust_customer_points` | 調整點數（正/負） |
+| `easystore_set_customer_credits` | ⚠️ 設定購物金絕對值 |
+| `easystore_adjust_customer_credits` | 相對調整購物金 |
+| `easystore_create_group` | 建立顧客群組 |
+| `easystore_update_group` | 更新群組名稱 |
+| `easystore_add_customers_to_group` | 批次加入群組 |
+| `easystore_update_group_customers` | ⚠️ 替換群組全部成員 |
+| `easystore_remove_customers_from_group` | 從群組移除顧客 |
+
+### 商品與分類（product_writes）— 8 個
+
+| 工具 | 說明 |
+|------|------|
+| `easystore_create_product` | 建立商品 |
+| `easystore_update_product` | 更新商品（含上下架） |
+| `easystore_update_variants` | 批次更新規格（價格/庫存） |
+| `easystore_create_collection` | 建立分類 |
+| `easystore_update_collection` | 更新分類 |
+| `easystore_delete_collection` | ⚠️ 刪除分類（需 confirm=true） |
+| `easystore_create_collect` | 將商品加入分類 |
+| `easystore_delete_collect` | ⚠️ 移除商品-分類關聯（需 confirm=true） |
+
+### 前台內容（storefront_writes）— 9 個
+
+`create_page` / `update_page` / `delete_page` / `update_navigation` / `create_redirect` / `update_redirect` / `delete_redirect` / `update_snippet` / `update_script_tag`
+
+### 系統設定（settings_writes）— 9 個
+
+`create_webhook` / `update_webhook` / `delete_webhook` / `create_curl` / `update_curl` / `delete_curl` / `create_metafield` / `update_metafield` / `delete_metafield`
+
+> ⚠️ **不可逆操作安全機制**：所有刪除類工具需傳入 `confirm=true` 才會執行；取消訂單等不可逆操作在 docstring 明確標示警告。
+
+---
+
+## RFM 顧客分群（讀寫閉環）
+
+使用 `easystore_get_rfm_orders` 分析後，搭配寫入工具自動執行分群：
+
+```
+1. easystore_get_order_summary(days=180)                  → 確認訂單規模
+2. easystore_get_rfm_orders(days=180, limit=250, page=N)  → 取得 RFM 資料
+3. Claude 分析 → 判斷分群條件
+4. easystore_update_group_customers(group_id, customer_ids)  → 更新群組成員
+```
+
+**Token 效能**：`easystore_get_rfm_orders` 只取 5 個必要欄位，相比 `easystore_list_orders` 節省 ~86% token。
+
+詳見 [docs/optimization/rfm-analysis-guide.md](docs/optimization/rfm-analysis-guide.md)。
+
+---
 
 ## 開發
 
@@ -136,6 +198,6 @@ python -m pytest tests/
 |------|------|
 | `docs/setup/` | 環境變數設定、Claude Desktop 設定 |
 | `docs/api-reference/` | EasyStore API 端點清單 |
-| `docs/architecture/` | 專案結構說明 |
+| `docs/architecture/` | 專案結構說明（含工具端點對照表） |
 | `docs/optimization/` | Token 優化指南、RFM 分析指南 |
 | `docs/archive/` | 已完成優化的驗證報告 |

@@ -88,6 +88,57 @@ async def api_get_nested(path: str, params: Optional[dict] = None) -> dict | str
         return handle_api_error(e, path)
 
 
+# ── 核心寫入請求 ──────────────────────────────────────────
+
+async def api_post(path: str, data: Optional[dict] = None) -> dict | str:
+    """執行 POST 請求。path 不含 /api/3.0 前綴，也不需加 .json。"""
+    config_error = validate_config()
+    if config_error:
+        return config_error
+    url = f"{get_base_url()}/{path}.json"
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, headers=get_headers(), json=data or {})
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as e:
+        return handle_api_error(e, path)
+
+
+async def api_put(path: str, data: Optional[dict] = None) -> dict | str:
+    """執行 PUT 請求。path 不含 /api/3.0 前綴，也不需加 .json。"""
+    config_error = validate_config()
+    if config_error:
+        return config_error
+    url = f"{get_base_url()}/{path}.json"
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.put(url, headers=get_headers(), json=data or {})
+            resp.raise_for_status()
+            return resp.json()
+    except Exception as e:
+        return handle_api_error(e, path)
+
+
+async def api_delete(path: str) -> dict | str:
+    """執行 DELETE 請求。path 不含 /api/3.0 前綴，也不需加 .json。"""
+    config_error = validate_config()
+    if config_error:
+        return config_error
+    url = f"{get_base_url()}/{path}.json"
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.delete(url, headers=get_headers())
+            resp.raise_for_status()
+            # DELETE 通常回傳空 body 或 {}
+            try:
+                return resp.json()
+            except Exception:
+                return {"status": "deleted"}
+    except Exception as e:
+        return handle_api_error(e, path)
+
+
 # ── 分頁輔助 ──────────────────────────────────────────────
 
 async def fetch_all_pages(path: str, resource_key: str, params: Optional[dict] = None, max_pages: int = 10) -> list | str:

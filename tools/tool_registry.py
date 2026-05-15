@@ -52,6 +52,6 @@ def register_all_tools(mcp: FastMCP) -> int:
         register_customer_writes(mcp)
         register_storefront_writes(mcp)
         register_settings_writes(mcp)
-        write_count = 55
+        write_count = 41  # 6 orders + 9 customers + 8 products + 9 storefront + 9 settings
 
     return read_count + write_count

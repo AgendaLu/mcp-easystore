@@ -1,7 +1,7 @@
 # mcp-easystore — 專案結構
 
-> **更新日期**：2026-05-08
-> **內容**：上半部為當前實際結構，下半部為各工具的端點對照表（規劃／實作參考）。
+> **更新日期**：2026-05-15
+> **內容**：上半部為當前實際結構，下半部為各工具的端點對照表（實作參考）。
 
 ---
 
@@ -21,17 +21,23 @@ mcp-easystore/
 │   ├── __init__.py
 │   └── settings.py                  # 環境變數載入、API 設定
 │
-├── tools/                           # MCP 工具實作（讀取工具皆已上線）
+├── tools/                           # MCP 工具實作
 │   ├── __init__.py
-│   ├── base_tool.py                 # 共用 HTTP client
+│   ├── base_tool.py                 # 共用 HTTP client（GET / POST / PUT / DELETE）
 │   ├── tool_registry.py             # 統一註冊（讀寫分離控制）
-│   ├── analytics_tools.py           # 數據分析（9 個）
+│   ├── analytics_tools.py           # 數據分析（11 個）
 │   ├── order_tools.py               # 訂單（8 個）
 │   ├── product_tools.py             # 商品（10 個）
 │   ├── customer_tools.py            # 客戶（10 個）
-│   ├── settings_tools.py            # 商店設定（13 個）
-│   └── storefront_tools.py          # Storefront 建設（7 個）
-│   # 寫入工具（tools/writes/）規劃中，預設不載入；ENABLE_WRITE_TOOLS=true 才啟用
+│   ├── settings_tools.py            # 商店設定（12 個）
+│   ├── storefront_tools.py          # Storefront 建設（7 個）
+│   └── writes/                      # 寫入工具（ENABLE_WRITE_TOOLS=true 才載入）
+│       ├── __init__.py
+│       ├── order_writes.py          # 訂單操作（6 個）
+│       ├── customer_writes.py       # 顧客與分群（9 個）
+│       ├── product_writes.py        # 商品與分類（8 個）
+│       ├── storefront_writes.py     # 前台內容（9 個）
+│       └── settings_writes.py       # 系統設定（9 個）
 │
 ├── scripts/                         # 一次性腳本：連線測試、優化驗證
 │   ├── start_mcp.sh
@@ -52,19 +58,19 @@ mcp-easystore/
     └── archive/                     # 已完成的測試結果與實施報告
 ```
 
-### 工具總數（讀取）
+### 工具總數
 
-| 模組 | 數量 |
-|------|-----|
-| analytics | 9 |
-| orders | 8 |
-| products | 10 |
-| customers | 10 |
-| settings | 13 |
-| storefront | 7 |
-| **合計** | **57** |
+| 模組 | 讀取 | 寫入 |
+|------|:---:|:---:|
+| analytics | 11 | — |
+| orders | 8 | 6 |
+| products | 10 | 8 |
+| customers | 10 | 9 |
+| settings | 12 | 9 |
+| storefront | 7 | 9 |
+| **合計** | **58** | **41** |
 
-寫入工具規劃約 55 個（`tools/writes/`），目前未實作；`tool_registry.py` 已預留載入點，需 `ENABLE_WRITE_TOOLS=true`。
+讀取工具預設全部載入（58 個）。寫入工具需 `ENABLE_WRITE_TOOLS=true` 才載入（41 個），啟用後總計 **99 個工具**。
 
 ---
 
@@ -184,77 +190,63 @@ mcp-easystore/
 
 ---
 
-### `tools/writes/order_writes.py` ── 訂單寫入（~8 個）
+### `tools/writes/order_writes.py` ── 訂單寫入（6 個）
 
 | 工具名稱 | 對應 Endpoint | 說明 |
 |----------|--------------|------|
-| `easystore_create_order` | `POST /orders.json` | 建立訂單 |
-| `easystore_update_order` | `PUT /orders/:id.json` | 更新訂單 |
-| `easystore_delete_order` | `DELETE /orders/:id.json` | 刪除訂單 |
-| `easystore_cancel_order` | `POST /orders/:id/cancel.json` | 取消訂單 |
-| `easystore_refund_order` | `POST /orders/:id/refund.json` | 退款 |
-| `easystore_cancel_refund` | `PUT /orders/:id/cancel_refund/:refund_id/cancel.json` | 取消退款 |
-| `easystore_create_fulfillment` | `POST /orders/:id/fulfillments.json` | 建立出貨紀錄 |
-| `easystore_update_fulfillment` | `PUT /orders/:id/fulfillments/:id.json` | 更新出貨狀態 |
+| `easystore_cancel_order` | `POST /orders/:id/cancel.json` | ⚠️ 取消訂單 |
+| `easystore_refund_order` | `POST /orders/:id/refund.json` | 退款（指定金額） |
+| `easystore_update_order` | `PUT /orders/:id.json` | 更新訂單備注 |
+| `easystore_create_fulfillment` | `POST /orders/:id/fulfillments.json` | 建立出貨紀錄（含追蹤號） |
+| `easystore_update_fulfillment` | `PUT /orders/:id/fulfillments/:id.json` | 更新物流追蹤號 |
+| `easystore_cancel_fulfillment` | `POST /orders/:id/fulfillments/:id/cancel.json` | ⚠️ 取消出貨紀錄 |
 
 ---
 
-### `tools/writes/product_writes.py` ── 商品寫入（~14 個）
+### `tools/writes/product_writes.py` ── 商品寫入（8 個）
 
 | 工具名稱 | 對應 Endpoint | 說明 |
 |----------|--------------|------|
-| `easystore_create_product` | `POST /products.json` | 建立商品 |
-| `easystore_update_product` | `PUT /products/:id.json` | 更新商品 |
-| `easystore_delete_product` | `DELETE /products/:id.json` | 刪除商品 |
-| `easystore_update_variants` | `PUT /products/:id/variants.json` | 批次更新規格 |
-| `easystore_create_options` | `POST /products/:id/options.json` | 新增 option type |
-| `easystore_update_options` | `PUT /products/:id/options.json` | 更新 options |
-| `easystore_delete_options` | `DELETE /products/:id/options.json` | 刪除 option type 或 value |
-| `easystore_rename_option_type` | `PUT /products/:id/option_type.json` | 重命名 option type |
-| `easystore_rename_option_value` | `PUT /products/:id/option_value.json` | 重命名 option value |
-| `easystore_add_product_images` | `POST /products/:id/images.json` | 新增商品圖片 |
-| `easystore_delete_product_images` | `DELETE /products/:id/images.json` | 刪除商品圖片 |
+| `easystore_create_product` | `POST /products.json` | 建立商品（草稿或直接上架） |
+| `easystore_update_product` | `PUT /products/:id.json` | 更新商品（含上下架） |
+| `easystore_update_variants` | `PUT /products/:id/variants.json` | 批次更新規格（價格/庫存/SKU） |
 | `easystore_create_collection` | `POST /collections.json` | 建立分類 |
-| `easystore_update_collection` | `PUT /collections/:id.json` | 更新分類 |
-| `easystore_delete_collection` | `DELETE /collections/:id.json` | 刪除分類 |
+| `easystore_update_collection` | `PUT /collections/:id.json` | 更新分類名稱/描述/SEO |
+| `easystore_delete_collection` | `DELETE /collections/:id.json` | ⚠️ 刪除分類（需 confirm=true） |
+| `easystore_create_collect` | `POST /collects.json` | 將商品加入分類 |
+| `easystore_delete_collect` | `DELETE /collects/:id.json` | ⚠️ 移除商品-分類關聯（需 confirm=true） |
 
 ---
 
-### `tools/writes/customer_writes.py` ── 客戶寫入（~12 個）
+### `tools/writes/customer_writes.py` ── 顧客與分群寫入（9 個）
 
 | 工具名稱 | 對應 Endpoint | 說明 |
 |----------|--------------|------|
-| `easystore_create_customer` | `POST /customers.json` | 建立會員 |
-| `easystore_update_customer` | `PUT /customers/:id.json` | 更新會員資料 |
-| `easystore_delete_customer` | `DELETE /customers/:id.json` | 刪除會員 |
-| `easystore_adjust_customer_point` | `PUT /customers/:id/point/adjust.json` | 調整會員點數 |
-| `easystore_set_customer_credit` | `PUT /customers/:id/credits/set.json` | 設定儲值金（絕對值） |
-| `easystore_adjust_customer_credit` | `PUT /customers/:id/credits/adjust.json` | 調整儲值金（相對值） |
-| `easystore_create_customer_address` | `POST /customers/:id/addresses.json` | 新增地址 |
-| `easystore_update_customer_address` | `PUT /customers/:id/addresses/:id.json` | 更新地址 |
-| `easystore_delete_customer_address` | `DELETE /customers/:id/addresses/:id.json` | 刪除地址 |
-| `easystore_set_primary_address` | `PUT /customers/:id/addresses/:id/default.json` | 設為主要地址 |
-| `easystore_create_group` | `POST /groups.json` | 建立會員群組 |
-| `easystore_manage_group_customers` | `POST/PUT/DELETE /groups/:id/customers.json` | 管理群組成員 |
+| `easystore_update_customer` | `PUT /customers/:id.json` | 更新顧客基本資料 |
+| `easystore_adjust_customer_points` | `PUT /customers/:id/point/adjust.json` | 調整點數（正/負） |
+| `easystore_set_customer_credits` | `PUT /customers/:id/credits/set.json` | ⚠️ 設定購物金絕對值 |
+| `easystore_adjust_customer_credits` | `PUT /customers/:id/credits/adjust.json` | 相對調整購物金 |
+| `easystore_create_group` | `POST /groups.json` | 建立顧客群組 |
+| `easystore_update_group` | `PUT /groups/:id.json` | 更新群組名稱 |
+| `easystore_add_customers_to_group` | `POST /groups/:id/customers.json` | 批次加入成員 |
+| `easystore_update_group_customers` | `PUT /groups/:id/customers.json` | ⚠️ 替換群組全部成員 |
+| `easystore_remove_customers_from_group` | `DELETE /groups/:id/customers.json` | 從群組移除指定顧客 |
 
 ---
 
-### `tools/writes/storefront_writes.py` ── Storefront 寫入（~12 個）
+### `tools/writes/storefront_writes.py` ── 前台內容寫入（9 個）
 
 | 工具名稱 | 對應 Endpoint | 說明 |
 |----------|--------------|------|
 | `easystore_create_page` | `POST /pages.json` | 建立靜態頁面 |
-| `easystore_update_page` | `PUT /pages/:id.json` | 更新頁面 |
-| `easystore_delete_page` | `DELETE /pages/:id.json` | 刪除頁面 |
-| `easystore_create_navigation` | `POST /navigations.json` | 建立導覽選單項目 |
-| `easystore_update_navigation` | `PUT /navigations/:id.json` | 更新選單項目 |
-| `easystore_delete_navigation` | `DELETE /navigations/:id.json` | 刪除選單項目 |
-| `easystore_create_redirect` | `POST /redirects.json` | 建立 URL 轉址 |
+| `easystore_update_page` | `PUT /pages/:id.json` | 更新頁面標題/內容/發布狀態 |
+| `easystore_delete_page` | `DELETE /pages/:id.json` | ⚠️ 刪除頁面（需 confirm=true） |
+| `easystore_update_navigation` | `PUT /navigations/:id.json` | 更新導覽選單標題 |
+| `easystore_create_redirect` | `POST /redirects.json` | 建立 URL 轉址規則 |
 | `easystore_update_redirect` | `PUT /redirects/:id.json` | 更新轉址規則 |
-| `easystore_delete_redirect` | `DELETE /redirects/:id.json` | 刪除轉址規則 |
-| `easystore_create_snippet` | `POST /snippets.json` | 建立 HTML/Liquid 片段 |
-| `easystore_update_snippet` | `PUT /snippets/:id.json` | 更新片段 |
-| `easystore_create_script_tag` | `POST /script_tags.json` | 新增外部 JS |
+| `easystore_delete_redirect` | `DELETE /redirects/:id.json` | ⚠️ 刪除轉址規則（需 confirm=true） |
+| `easystore_update_snippet` | `PUT /snippets/:id.json` | 更新 HTML/Liquid 片段 |
+| `easystore_update_script_tag` | `PUT /script_tags/:id.json` | 更新 Script Tag URL |
 
 ---
 
@@ -312,23 +304,23 @@ mcp-easystore/
 
 | 檔案 | 工具數 | 類型 |
 |------|:------:|------|
-| `analytics_tools.py` | ~12 | READ |
-| `order_tools.py` | ~10 | READ |
-| `product_tools.py` | ~12 | READ |
-| `customer_tools.py` | ~10 | READ |
-| `settings_tools.py` | ~14 | READ |
-| `storefront_tools.py` | ~8 | READ |
-| `checkout_tools.py` | ~4 | READ |
-| `writes/order_writes.py` | ~8 | WRITE |
-| `writes/product_writes.py` | ~14 | WRITE |
-| `writes/customer_writes.py` | ~12 | WRITE |
-| `writes/storefront_writes.py` | ~12 | WRITE |
-| `writes/settings_writes.py` | ~9 | WRITE |
-| **合計** | **~125** | |
+| `analytics_tools.py` | 11 | READ |
+| `order_tools.py` | 8 | READ |
+| `product_tools.py` | 10 | READ |
+| `customer_tools.py` | 10 | READ |
+| `settings_tools.py` | 12 | READ |
+| `storefront_tools.py` | 7 | READ |
+| `writes/order_writes.py` | 6 | WRITE |
+| `writes/product_writes.py` | 8 | WRITE |
+| `writes/customer_writes.py` | 9 | WRITE |
+| `writes/storefront_writes.py` | 9 | WRITE |
+| `writes/settings_writes.py` | 9 | WRITE |
+| **合計** | **99** | |
 
 > [!NOTE]
-> Read tools：~70 個，Write tools：~55 個。
-> 寫入工具預設不載入，需在 `.env` 設定 `ENABLE_WRITE_TOOLS=true` 並重啟伺服器才啟用，避免 Claude 在分析任務中意外觸發寫入操作。
+> Read tools：58 個（預設全部載入）。Write tools：41 個（需 `ENABLE_WRITE_TOOLS=true`）。
+> 寫入工具預設不載入，避免 Claude 在分析任務中意外觸發寫入操作。
+> 刪除類工具需傳入 `confirm=true` 參數才執行；⚠️ 標示代表不可逆操作。
 
 ---
 
