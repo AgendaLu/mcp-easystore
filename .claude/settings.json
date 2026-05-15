@@ -3,7 +3,7 @@
   "env": {
     "EASYSTORE_SHOP_URL": "${EASYSTORE_SHOP_URL}",
     "EASYSTORE_ACCESS_TOKEN": "${EASYSTORE_ACCESS_TOKEN}",
-    "ENABLE_WRITE_TOOLS": "${ENABLE_WRITE_TOOLS:false}"
+    "ENABLE_WRITE_TOOLS": "${ENABLE_WRITE_TOOLS:true}"
   },
   "mcpServers": {
     "easystore": {
