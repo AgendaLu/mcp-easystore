@@ -43,7 +43,7 @@ class GetRFMOrdersInput(BaseModel):
     date_from: Optional[str] = Field(None, description="開始日期 YYYY-MM-DD")
     date_to: Optional[str] = Field(None, description="結束日期 YYYY-MM-DD")
     page: int = Field(default=1, ge=1, description="頁碼，從 1 開始")
-    limit: int = Field(default=50, ge=1, le=250, description="每頁筆數，建議 50–100")
+    limit: int = Field(default=100, ge=1, le=250, description="每頁筆數，建議 100–250，預設 100")
 
 
 def _resolve_dates(date_from: Optional[str], date_to: Optional[str], days: Optional[int]) -> tuple[str, str]:
@@ -415,6 +415,7 @@ def register_analytics_tools(mcp: FastMCP):
 
         query: dict = {
             "financial_status": "paid",
+            "fields": "id,customer_id,customer_email,total_price,created_at",
             "page": params.page,
             "limit": params.limit,
         }

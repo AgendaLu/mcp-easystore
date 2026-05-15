@@ -50,17 +50,16 @@ Token 消耗：~150
 ### Step 3：分頁取回訂單（N 次 API）
 
 ```
-工具：easystore_list_orders
+工具：easystore_get_rfm_orders
 參數：
-  financial_status="paid"   ← 只計算實際付款訂單
   days=180                  ← 分析時間範圍
-  limit=50                  ← 每頁筆數
-  page=1, 2, 3...           ← 逐頁取回
+  limit=100                 ← 每頁筆數（預設 100，最大 250）
+  page=1, 2, 3...           ← 逐頁取回，直到 page >= page_count
 
-Token 消耗：每頁約 800–1,200 tokens
+Token 消耗：每頁約 500–800 tokens（相比完整欄位節省 ~86%）
 ```
 
-**重要**：預設回傳已包含 `customer_id`、`created_at`、`total_price` 等基本欄位，**不需要**加 `fields=customer`（會增加大量 token 但 RFM 不需要完整客戶物件）。
+**重要**：`easystore_get_rfm_orders` 已固定只回傳 RFM 所需的 5 個欄位（`id`、`customer_id`、`customer_email`、`total_price`、`created_at`），並透過 API `fields` 參數減少網路傳輸量，**不需要**也**不應改用** `easystore_list_orders`。
 
 ### Step 4：Claude 端彙總計算（0 次 API）
 
@@ -94,13 +93,13 @@ for order in all_orders:
 
 ## Token 消耗估算
 
-| 訂單規模 | 頁數 | 預估 token | 完整欄位對比 | 節省比例 |
+| 訂單規模 | 頁數（limit=100）| 預估 token | 完整欄位對比 | 節省比例 |
 |---------|------|-----------|------------|---------|
-| 500 筆（10 頁） | 10 次 | ~10,000 | ~60,000 | **83%** |
-| 1,000 筆（20 頁） | 20 次 | ~20,000 | ~120,000 | **83%** |
-| 2,000 筆（40 頁） | 40 次 | ~40,000 | ~240,000 | **83%** |
+| 500 筆（5 頁） | 5 次 | ~5,000 | ~60,000 | **92%** |
+| 1,000 筆（10 頁） | 10 次 | ~10,000 | ~120,000 | **92%** |
+| 2,000 筆（20 頁） | 20 次 | ~20,000 | ~240,000 | **92%** |
 
-> 節省來源：不使用 `fields=items,customer,transactions`（這些欄位各自會讓每筆訂單膨脹 5–10 倍）
+> 節省來源：`easystore_get_rfm_orders` 透過 API `fields` 參數只取 5 個欄位，並在 Claude 端進一步過濾，相比完整欄位回傳節省 ~86% token；limit=100 再將 API 呼叫次數減半。
 
 ---
 
@@ -112,8 +111,8 @@ for order in all_orders:
 步驟：
 1. 先呼叫 easystore_get_store_info 確認幣別
 2. 呼叫 easystore_get_order_summary(days=180) 確認總訂單數
-3. 分頁呼叫 easystore_list_orders(financial_status="paid", days=180, limit=50)
-   直到取完所有頁
+3. 分頁呼叫 easystore_get_rfm_orders(days=180, limit=100)
+   直到 page >= page_count
 4. 彙總每位顧客的：最後購買日期、購買次數、累計消費金額
 5. 依 R/F/M 各打 1–5 分，分成以下群組並統計人數：
    - 冠軍顧客（R≥4, F≥4, M≥4）

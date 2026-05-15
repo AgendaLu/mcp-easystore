@@ -98,10 +98,12 @@ EASYSTORE_ACCESS_TOKEN=your_access_token
 使用 `easystore_get_rfm_orders` 搭配分步驟查詢，對顧客進行 Recency / Frequency / Monetary 分群：
 
 ```
-1. easystore_get_order_summary(days=180)   → 確認訂單規模
-2. easystore_get_rfm_orders(days=180, page=N)  → 分頁取回最小欄位
+1. easystore_get_order_summary(days=180)              → 確認訂單規模
+2. easystore_get_rfm_orders(days=180, limit=100, page=N)  → 分頁取回最小欄位
 3. Claude 端彙總 → 分群輸出
 ```
+
+**Token 效能**：`easystore_get_rfm_orders` 透過 API `fields` 參數只取 5 個必要欄位，相比 `easystore_list_orders` 預設回傳節省 ~86% token。建議使用 `limit=100`（預設）至 `limit=250` 減少 API 呼叫次數。
 
 詳見 [docs/optimization/rfm-analysis-guide.md](docs/optimization/rfm-analysis-guide.md)。
 
