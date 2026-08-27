@@ -7,6 +7,7 @@
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 
@@ -87,24 +88,27 @@ def check_env_vars():
         print(f"  ✗ 檔案不存在: {mcp_file}")
         print("     （改用 claude mcp add 註冊的話屬正常，見 docs/setup/setup-guide.md）")
 
-    # 5. 環境變數驗證
-    print("\n5️⃣  環境變數驗證")
+    # 5. 環境變數驗證（用 config.settings 的解析結果，與 MCP server 看到的一致）
+    print("\n5️⃣  環境變數驗證（MCP server 實際會讀到的值）")
     print("-" * 60)
+
+    sys.path.insert(0, str(root_dir))
+    from config import settings
 
     config_errors = []
 
-    if not os.environ.get("EASYSTORE_SHOP_URL"):
+    if settings.EASYSTORE_SHOP_URL:
+        print(f"✓ EASYSTORE_SHOP_URL: {settings.EASYSTORE_SHOP_URL}")
+    else:
         config_errors.append("❌ EASYSTORE_SHOP_URL 未設定")
-    else:
-        print("✓ EASYSTORE_SHOP_URL: 已設定")
 
-    if not os.environ.get("EASYSTORE_ACCESS_TOKEN"):
+    if settings.EASYSTORE_ACCESS_TOKEN:
+        token = settings.EASYSTORE_ACCESS_TOKEN
+        print(f"✓ EASYSTORE_ACCESS_TOKEN: 已設定（{token[:4]}…{token[-4:]}）")
+    else:
         config_errors.append("❌ EASYSTORE_ACCESS_TOKEN 未設定")
-    else:
-        print("✓ EASYSTORE_ACCESS_TOKEN: 已設定")
 
-    enable_write = os.environ.get("ENABLE_WRITE_TOOLS", "false").lower() == "true"
-    status = "已啟用" if enable_write else "未啟用（預設）"
+    status = "已啟用" if settings.ENABLE_WRITE_TOOLS else "未啟用（預設）"
     print(f"✓ ENABLE_WRITE_TOOLS: {status}")
 
     if config_errors:
