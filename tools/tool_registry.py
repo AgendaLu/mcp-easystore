@@ -16,6 +16,11 @@ from tools.settings_tools import register_settings_tools
 from tools.storefront_tools import register_storefront_tools
 
 
+def _count(mcp: FastMCP) -> int:
+    """目前已註冊的工具數量（從 server 實際狀態取得，不寫死）。"""
+    return len(mcp._tool_manager.list_tools())
+
+
 def register_all_tools(mcp: FastMCP) -> int:
     """
     註冊所有工具到 MCP server。
@@ -29,17 +34,7 @@ def register_all_tools(mcp: FastMCP) -> int:
     register_settings_tools(mcp)
     register_storefront_tools(mcp)
 
-    read_count = (
-        10  # analytics
-        + 8   # orders
-        + 10  # products
-        + 10  # customers
-        + 13  # settings
-        + 7   # storefront
-    )
-
     # ── 寫入工具（需明確啟用）────────────────────────────
-    write_count = 0
     if ENABLE_WRITE_TOOLS:
         from tools.writes.order_writes import register_order_writes
         from tools.writes.product_writes import register_product_writes
@@ -52,6 +47,5 @@ def register_all_tools(mcp: FastMCP) -> int:
         register_customer_writes(mcp)
         register_storefront_writes(mcp)
         register_settings_writes(mcp)
-        write_count = 41  # 6 orders + 9 customers + 8 products + 9 storefront + 9 settings
 
-    return read_count + write_count
+    return _count(mcp)

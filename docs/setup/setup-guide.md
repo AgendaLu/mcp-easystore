@@ -20,9 +20,9 @@
 | 層級 | 位置 | 說明 |
 |------|------|------|
 | EasyStore 端 | 客製擴充的存取範疇 | 沒給寫入範疇 → API 回 403 |
-| MCP server 端 | `ENABLE_WRITE_TOOLS` | 預設 `false`，只註冊 58 個讀取工具 |
+| MCP server 端 | `ENABLE_WRITE_TOOLS` | 預設 `false`，只註冊 59 個讀取工具 |
 
-只想查資料就給讀取範疇、`ENABLE_WRITE_TOOLS` 維持 `false`。要用取消訂單、退款、批次改價這些操作，兩邊都得打開（41 個寫入工具，總計 99 個）。
+只想查資料就給讀取範疇、`ENABLE_WRITE_TOOLS` 維持 `false`。要用取消訂單、退款、批次改價這些操作，兩邊都得打開（41 個寫入工具，總計 100 個）。
 
 > 權杖只在儲存當下顯示一次，遺失就重新產生。外洩時也是回這個頁面重新產生，舊的立刻失效。
 
@@ -133,7 +133,7 @@ python3 -m pytest tests/              # 單元測試
 MCP server 啟動成功時，stderr 會出現：
 
 ```
-[easystore_mcp] 已載入 58 個工具 | 🔒 寫入工具未啟用（設定 ENABLE_WRITE_TOOLS=true 啟用）
+[easystore_mcp] 已載入 59 個工具 | 🔒 寫入工具未啟用（設定 ENABLE_WRITE_TOOLS=true 啟用）
 ```
 
 ---

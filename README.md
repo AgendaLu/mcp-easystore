@@ -2,7 +2,7 @@
 
 EasyStore 電商平台的 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 伺服器。
 
-讓 Claude 透過自然語言直接查詢並操作 EasyStore 商店資料。支援 **58 個讀取工具** + **41 個寫入工具**（選用），涵蓋訂單、商品、顧客、營收、庫存、金流等全域操作。
+讓 Claude 透過自然語言直接查詢並操作 EasyStore 商店資料。支援 **59 個讀取工具** + **41 個寫入工具**（選用），涵蓋訂單、商品、顧客、營收、庫存、金流等全域操作。
 
 ## 功能概覽
 
@@ -47,7 +47,7 @@ Claude Desktop 的設定位置、`.env` 用法、故障排除見 [docs/setup/set
 
 ---
 
-## 讀取工具（58 個，預設全部載入）
+## 讀取工具（59 個，預設全部載入）
 
 ### 分析工具（analytics_tools）— 11 個
 
