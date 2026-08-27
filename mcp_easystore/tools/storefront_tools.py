@@ -8,7 +8,7 @@ Shopline 無對應資源。
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_get, to_json, extract_resource
+from mcp_easystore.tools.base_tool import api_get, to_json, extract_resource
 
 
 class ListPagesInput(BaseModel):

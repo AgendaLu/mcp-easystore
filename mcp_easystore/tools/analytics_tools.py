@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_get, api_get_nested, fetch_all_pages, to_json
+from mcp_easystore.tools.base_tool import api_get, api_get_nested, fetch_all_pages, to_json
 
 
 # ── Pydantic Models ───────────────────────────────────────

@@ -12,7 +12,7 @@ base_tool.py — 共用 HTTP client
 import json
 import httpx
 from typing import Any, Optional
-from config.settings import get_base_url, get_headers, validate_config
+from mcp_easystore.config.settings import get_base_url, get_headers, validate_config
 
 
 # ── 錯誤處理 ──────────────────────────────────────────────

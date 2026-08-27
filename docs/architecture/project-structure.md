@@ -1,6 +1,6 @@
 # mcp-easystore — 專案結構
 
-> **更新日期**：2026-05-15
+> **更新日期**：2026-08-27
 > **內容**：上半部為當前實際結構，下半部為各工具的端點對照表（實作參考）。
 
 ---
@@ -13,32 +13,35 @@ mcp-easystore/
 ├── LICENSE
 ├── SKILL.md                         # Claude skill 定義（easystore-analyst）
 ├── CLAUDE.md                        # Claude Code session 進入點說明
-├── mcp_server.py                    # MCP 伺服器入口（stdio JSON-RPC 2.0）
-├── requirements.txt
-├── .mcp.json                        # MCP client 註冊設定（憑證由環境變數展開）
+├── pyproject.toml                   # 打包設定（entry point: mcp-easystore）
+├── .mcp.json                        # 開發用 MCP 註冊設定（走本地 venv）
 ├── .env / .env.example / .gitignore
 │
-├── config/
+├── mcp_easystore/                   # 套件本體（uvx 安裝的就是這包）
 │   ├── __init__.py
-│   └── settings.py                  # 環境變數載入、API 設定
-│
-├── tools/                           # MCP 工具實作
-│   ├── __init__.py
-│   ├── base_tool.py                 # 共用 HTTP client（GET / POST / PUT / DELETE）
-│   ├── tool_registry.py             # 統一註冊（讀寫分離控制）
-│   ├── analytics_tools.py           # 數據分析（11 個）
-│   ├── order_tools.py               # 訂單（8 個）
-│   ├── product_tools.py             # 商品（9 個）
-│   ├── customer_tools.py            # 客戶（10 個）
-│   ├── settings_tools.py            # 商店設定（14 個）
-│   ├── storefront_tools.py          # Storefront 建設（7 個）
-│   └── writes/                      # 寫入工具（ENABLE_WRITE_TOOLS=true 才載入）
+│   ├── server.py                    # MCP 伺服器入口（stdio JSON-RPC 2.0；main() 為 console script）
+│   │
+│   ├── config/
+│   │   ├── __init__.py
+│   │   └── settings.py              # 環境變數載入、API 設定
+│   │
+│   └── tools/                       # MCP 工具實作
 │       ├── __init__.py
-│       ├── order_writes.py          # 訂單操作（6 個）
-│       ├── customer_writes.py       # 顧客與分群（9 個）
-│       ├── product_writes.py        # 商品與分類（8 個）
-│       ├── storefront_writes.py     # 前台內容（9 個）
-│       └── settings_writes.py       # 系統設定（9 個）
+│       ├── base_tool.py             # 共用 HTTP client（GET / POST / PUT / DELETE）
+│       ├── tool_registry.py         # 統一註冊（讀寫分離控制）
+│       ├── analytics_tools.py       # 數據分析（11 個）
+│       ├── order_tools.py           # 訂單（8 個）
+│       ├── product_tools.py         # 商品（9 個）
+│       ├── customer_tools.py        # 客戶（10 個）
+│       ├── settings_tools.py        # 商店設定（14 個）
+│       ├── storefront_tools.py      # Storefront 建設（7 個）
+│       └── writes/                  # 寫入工具（ENABLE_WRITE_TOOLS=true 才載入）
+│           ├── __init__.py
+│           ├── order_writes.py      # 訂單操作（6 個）
+│           ├── customer_writes.py   # 顧客與分群（9 個）
+│           ├── product_writes.py    # 商品與分類（8 個）
+│           ├── storefront_writes.py # 前台內容（9 個）
+│           └── settings_writes.py   # 系統設定（9 個）
 │
 ├── scripts/                         # 一次性腳本：連線測試、優化驗證
 │   ├── start_mcp.sh
@@ -49,10 +52,14 @@ mcp-easystore/
 │   └── verify_fields_support.py
 │
 ├── tests/
-│   └── test_orders.py
+│   ├── test_settings.py             # 環境變數解析
+│   ├── test_tool_registry.py        # 工具數量、命名、唯一性
+│   ├── test_packaging.py            # import 目標解析、entry point、依賴
+│   ├── test_docs.py                 # 文件與實際註冊狀態一致性
+│   └── test_orders.py               # 手動腳本（打真實 API，非自動化測試）
 │
 └── docs/
-    ├── setup/                       # 環境變數、Cowork 設定
+    ├── setup/                       # 安裝設定指南（權杖取得、MCP 註冊、故障排除）
     ├── api-reference/               # EasyStore / Shopline API 端點清單
     ├── architecture/                # 本檔
     ├── optimization/                # 規劃中的優化分析、checklist、實施指南
@@ -65,11 +72,11 @@ mcp-easystore/
 |------|:---:|:---:|
 | analytics | 11 | — |
 | orders | 8 | 6 |
-| products | 10 | 8 |
+| products | 9 | 8 |
 | customers | 10 | 9 |
-| settings | 12 | 9 |
+| settings | 14 | 9 |
 | storefront | 7 | 9 |
-| **合計** | **58** | **41** |
+| **合計** | **59** | **41** |
 
 讀取工具預設全部載入（59 個）。寫入工具需 `ENABLE_WRITE_TOOLS=true` 才載入（41 個），啟用後總計 **100 個工具**。
 

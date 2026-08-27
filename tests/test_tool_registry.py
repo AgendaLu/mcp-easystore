@@ -18,7 +18,7 @@ os.environ.setdefault("EASYSTORE_SHOP_URL", "https://test.example.com")
 os.environ.setdefault("EASYSTORE_ACCESS_TOKEN", "test_token")
 
 from mcp.server.fastmcp import FastMCP  # noqa: E402
-from tools.tool_registry import register_all_tools  # noqa: E402
+from mcp_easystore.tools.tool_registry import register_all_tools  # noqa: E402
 
 
 def test_reported_count_matches_registered_tools():

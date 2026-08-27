@@ -20,21 +20,21 @@ os.environ.setdefault("EASYSTORE_SHOP_URL", "https://test.example.com")
 os.environ.setdefault("EASYSTORE_ACCESS_TOKEN", "test_token")
 
 from mcp.server.fastmcp import FastMCP  # noqa: E402
-from tools.tool_registry import register_all_tools  # noqa: E402
+from mcp_easystore.tools.tool_registry import register_all_tools  # noqa: E402
 
 
 def _tool_names(enable_writes):
     os.environ["ENABLE_WRITE_TOOLS"] = "true" if enable_writes else "false"
     import importlib
 
-    import config.settings
-    import tools.tool_registry
+    import mcp_easystore.config.settings
+    import mcp_easystore.tools.tool_registry
 
-    importlib.reload(config.settings)
-    importlib.reload(tools.tool_registry)
+    importlib.reload(mcp_easystore.config.settings)
+    importlib.reload(mcp_easystore.tools.tool_registry)
 
     mcp = FastMCP("test")
-    tools.tool_registry.register_all_tools(mcp)
+    mcp_easystore.tools.tool_registry.register_all_tools(mcp)
     return [t.name for t in asyncio.run(mcp.list_tools())]
 
 

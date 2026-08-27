@@ -3,7 +3,10 @@
     "easystore": {
       "type": "stdio",
       "command": "${EASYSTORE_PYTHON:-.venv/bin/python}",
-      "args": ["mcp_server.py"],
+      "args": [
+        "-m",
+        "mcp_easystore.server"
+      ],
       "env": {
         "PYTHONUNBUFFERED": "1",
         "EASYSTORE_SHOP_URL": "${EASYSTORE_SHOP_URL:-}",

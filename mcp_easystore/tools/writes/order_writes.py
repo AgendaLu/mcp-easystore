@@ -9,7 +9,7 @@ import json
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_post, api_put, to_json
+from mcp_easystore.tools.base_tool import api_post, api_put, to_json
 
 
 # ── Pydantic Models ───────────────────────────────────────

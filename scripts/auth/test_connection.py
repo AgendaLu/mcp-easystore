@@ -13,8 +13,8 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from config.settings import validate_config, EASYSTORE_SHOP_URL, get_base_url
-from tools.base_tool import api_get
+from mcp_easystore.config.settings import validate_config, EASYSTORE_SHOP_URL, get_base_url
+from mcp_easystore.tools.base_tool import api_get
 
 async def main():
     print("=== EasyStore MCP Server — 連線驗證 ===\n")

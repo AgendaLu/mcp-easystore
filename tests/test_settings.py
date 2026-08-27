@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-config/settings.py 的環境變數解析測試。
+mcp_easystore/config/settings.py 的環境變數解析測試。
 
 settings.py 的載入邏輯寫在 module 層級（import 時就執行），所以每個案例都在
-獨立的子行程中跑，並且把 settings.py 複製到 tmp 目錄——settings.py 用
-__file__ 定位專案根目錄，複製過去就能安全地擺放假的 .env / .claude 檔案，
-不會動到真正的 repo。
+獨立的子行程中跑，並且把套件複製到 tmp 目錄、以 tmp 為工作目錄——settings.py
+以工作目錄定位 .env，這樣就能安全地擺放假的 .env / .claude 檔案，不會動到
+真正的 repo。
 """
 import json
 import os
@@ -22,7 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROBE = """
 import json, sys
 sys.path.insert(0, ".")
-from config import settings
+from mcp_easystore.config import settings
 print(json.dumps({
     "shop_url": settings.EASYSTORE_SHOP_URL,
     "token": settings.EASYSTORE_ACCESS_TOKEN,
@@ -34,11 +34,15 @@ print(json.dumps({
 
 @pytest.fixture
 def project(tmp_path):
-    """建立一個只含 config/settings.py 的最小專案樹。"""
-    config_dir = tmp_path / "config"
-    config_dir.mkdir()
+    """建立一個只含 mcp_easystore/config/settings.py 的最小專案樹。"""
+    config_dir = tmp_path / "mcp_easystore" / "config"
+    config_dir.mkdir(parents=True)
+    (config_dir.parent / "__init__.py").write_text("")
     (config_dir / "__init__.py").write_text("")
-    shutil.copy(REPO_ROOT / "config" / "settings.py", config_dir / "settings.py")
+    shutil.copy(
+        REPO_ROOT / "mcp_easystore" / "config" / "settings.py",
+        config_dir / "settings.py",
+    )
     return tmp_path
 
 

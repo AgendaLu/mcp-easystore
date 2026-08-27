@@ -4,11 +4,13 @@ EasyStore MCP Server — 設定模組
 
 環境變數優先級（由高到低）：
   1. MCP client 注入的環境變數（.mcp.json / claude mcp add，已存在 os.environ）
-  2. .env.local 檔案
-  3. .env 檔案
+  2. 工作目錄下的 .env.local 檔案
+  3. 工作目錄下的 .env 檔案
 
-.env 兩個檔案是給 scripts/ 底下的獨立腳本用的；MCP server 由 client 啟動時，
-環境變數已經注入 os.environ，不會走到檔案這條路。
+透過 uvx 安裝時程式碼在 site-packages 裡，套件目錄下不會有 .env，所以
+.env 一律以「執行時的工作目錄」為準——也就是開發者在 repo 根目錄跑
+scripts/ 腳本的那個情境。MCP server 由 client 啟動時環境變數已經注入
+os.environ，不會走到檔案這條路。
 """
 import os
 import re
@@ -46,7 +48,7 @@ def _load_env_files():
         print("[WARNING] python-dotenv 未安裝，部分環境變數可能無法加載")
         return
 
-    root_dir = Path(__file__).parent.parent
+    root_dir = Path.cwd()
 
     # 優先級：.env < .env.local
     # 注意：load_dotenv 只會加載尚未存在的變數，已存在的不會被覆蓋

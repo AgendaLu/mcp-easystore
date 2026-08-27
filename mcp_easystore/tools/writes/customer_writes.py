@@ -9,7 +9,7 @@ customer_writes.py — 顧客與分群寫入工具（9 個）
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_post, api_put, api_delete, to_json
+from mcp_easystore.tools.base_tool import api_post, api_put, api_delete, to_json
 
 
 # ── Pydantic Models ───────────────────────────────────────
@@ -141,7 +141,7 @@ def register_customer_writes(mcp: FastMCP):
     @mcp.tool()
     async def easystore_remove_customers_from_group(params: RemoveGroupCustomersInput) -> str:
         """從群組中移除指定顧客。"""
-        from tools.base_tool import get_base_url, get_headers, handle_api_error
+        from mcp_easystore.tools.base_tool import get_base_url, get_headers, handle_api_error
         import httpx
         url = f"{get_base_url()}/groups/{params.group_id}/customers.json"
         try:
