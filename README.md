@@ -182,16 +182,25 @@ ENABLE_WRITE_TOOLS=true
 
 ## 開發
 
+要改程式碼才需要 clone：
+
 ```bash
-# 環境檢查
-python scripts/check_env.py
+git clone https://github.com/AgendaLu/mcp-easystore.git && cd mcp-easystore
+python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+```
+
+```bash
+# 執行測試
+.venv/bin/python -m pytest tests/
+
+# 環境檢查（顯示 MCP server 實際會讀到的值）
+.venv/bin/python scripts/check_env.py
 
 # API 連線測試
-python scripts/auth/test_connection.py
-
-# 執行測試
-python -m pytest tests/
+.venv/bin/python scripts/auth/test_connection.py
 ```
+
+憑證放 `.env.local`（`cp .env.example .env.local`，已被 `.gitignore` 排除）。repo 根目錄的 [`.mcp.json`](.mcp.json) 走本地 venv，不強制裝 uv。
 
 專案結構詳見 [docs/architecture/project-structure.md](docs/architecture/project-structure.md)。
 
