@@ -1,6 +1,6 @@
 # mcp-easystore
 
-EasyStore 電商平台的 MCP 伺服器。提供 **58 個讀取工具 + 41 個寫入工具**給 Claude，讓 LLM 能透過自然語言查詢訂單、商品、客戶、營收等資料，並可執行取消訂單、退款、顧客分群等寫入操作。重點目標：**token 使用效率優化**。
+EasyStore 電商平台的 MCP 伺服器。提供 **59 個讀取工具 + 41 個寫入工具**給 Claude，讓 LLM 能透過自然語言查詢訂單、商品、客戶、營收等資料，並可執行取消訂單、退款、顧客分群等寫入操作。重點目標：**token 使用效率優化**。
 
 ## 專案結構速覽
 
@@ -38,8 +38,8 @@ docs/                # 文件（見下方）
 ## 開發慣例
 
 - **語言**：Python 3.12
-- **MCP framework**：`fastmcp`
-- **環境變數**：`.env` 載入；範例見 `.env.example`，說明見 [docs/setup/env-variable-guide.md](docs/setup/env-variable-guide.md)
+- **MCP framework**：官方 `mcp` SDK 內建的 `mcp.server.fastmcp.FastMCP`（不是獨立的 `fastmcp` 套件）
+- **環境變數**：由 MCP client 注入（`.mcp.json` / `claude mcp add`）；`config/settings.py` 只讀 `os.environ` 與 `.env`。`.env` 是給 `scripts/`、`tests/` 的獨立腳本用的。設定說明見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)
 - **寫入工具**：預設不載入。需 `ENABLE_WRITE_TOOLS=true` 才會註冊（避免誤操作）。
 - **工具命名**：`easystore_<verb>_<resource>`，例如 `easystore_list_orders`、`easystore_get_revenue_summary`。
 - **Token 優化**：新增/修改工具時，優先考慮 `fields` 參數縮減 response 大小（見 `docs/optimization/implementation-guide.md`）。

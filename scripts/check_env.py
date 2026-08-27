@@ -7,6 +7,7 @@
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 
@@ -68,65 +69,46 @@ def check_env_vars():
     else:
         print(f"  ℹ 檔案不存在（這是正常的，使用 .env.example 作為範本）")
 
-    # 4. 檢查 .claude/settings.json
-    print("\n4️⃣  .claude/settings.json（專案級配置）")
+    # 4. 檢查 .mcp.json
+    print("\n4️⃣  .mcp.json（MCP client 註冊設定）")
     print("-" * 60)
-    settings_file = root_dir / ".claude" / "settings.json"
-    if settings_file.exists():
-        print(f"  ✓ 檔案存在: {settings_file}")
+    mcp_file = root_dir / ".mcp.json"
+    if mcp_file.exists():
+        print(f"  ✓ 檔案存在: {mcp_file}")
         try:
-            with open(settings_file, 'r') as f:
+            with open(mcp_file, 'r') as f:
                 config = json.load(f)
-                env_vars = config.get("env", {})
-                if env_vars:
-                    for key in env_vars:
-                        print(f"    - {key}")
-                else:
-                    print("    （無環境變數定義）")
+                for name, server in config.get("mcpServers", {}).items():
+                    print(f"    - {name}: {server.get('command')} {' '.join(server.get('args', []))}")
+                    for key in server.get("env", {}):
+                        print(f"        env: {key}")
         except Exception as e:
             print(f"  ✗ 讀取失敗: {e}")
     else:
-        print(f"  ✗ 檔案不存在: {settings_file}")
+        print(f"  ✗ 檔案不存在: {mcp_file}")
+        print("     （改用 claude mcp add 註冊的話屬正常，見 docs/setup/setup-guide.md）")
 
-    # 5. 檢查 .claude/settings.local.json
-    print("\n5️⃣  .claude/settings.local.json（本地配置 - 敏感信息）")
+    # 5. 環境變數驗證（用 config.settings 的解析結果，與 MCP server 看到的一致）
+    print("\n5️⃣  環境變數驗證（MCP server 實際會讀到的值）")
     print("-" * 60)
-    settings_local_file = root_dir / ".claude" / "settings.local.json"
-    if settings_local_file.exists():
-        print(f"  ✓ 檔案存在: {settings_local_file}")
-        try:
-            with open(settings_local_file, 'r') as f:
-                config = json.load(f)
-                env_vars = config.get("env", {})
-                if env_vars:
-                    for key, value in env_vars.items():
-                        display_value = str(value)[:30] + "..." if len(str(value)) > 30 else str(value)
-                        print(f"    - {key}: {display_value}")
-                else:
-                    print("    （無環境變數定義）")
-        except Exception as e:
-            print(f"  ✗ 讀取失敗: {e}")
-    else:
-        print(f"  ℹ 檔案不存在（需要手動創建，.gitignore 已排除）")
 
-    # 6. 環境變數驗證
-    print("\n6️⃣  環境變數驗證")
-    print("-" * 60)
+    sys.path.insert(0, str(root_dir))
+    from config import settings
 
     config_errors = []
 
-    if not os.environ.get("EASYSTORE_SHOP_URL"):
+    if settings.EASYSTORE_SHOP_URL:
+        print(f"✓ EASYSTORE_SHOP_URL: {settings.EASYSTORE_SHOP_URL}")
+    else:
         config_errors.append("❌ EASYSTORE_SHOP_URL 未設定")
-    else:
-        print("✓ EASYSTORE_SHOP_URL: 已設定")
 
-    if not os.environ.get("EASYSTORE_ACCESS_TOKEN"):
+    if settings.EASYSTORE_ACCESS_TOKEN:
+        token = settings.EASYSTORE_ACCESS_TOKEN
+        print(f"✓ EASYSTORE_ACCESS_TOKEN: 已設定（{token[:4]}…{token[-4:]}）")
+    else:
         config_errors.append("❌ EASYSTORE_ACCESS_TOKEN 未設定")
-    else:
-        print("✓ EASYSTORE_ACCESS_TOKEN: 已設定")
 
-    enable_write = os.environ.get("ENABLE_WRITE_TOOLS", "false").lower() == "true"
-    status = "已啟用" if enable_write else "未啟用（預設）"
+    status = "已啟用" if settings.ENABLE_WRITE_TOOLS else "未啟用（預設）"
     print(f"✓ ENABLE_WRITE_TOOLS: {status}")
 
     if config_errors:
