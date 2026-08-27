@@ -11,7 +11,31 @@ EasyStore MCP Server — 設定模組
 環境變數已經注入 os.environ，不會走到檔案這條路。
 """
 import os
+import re
 from pathlib import Path
+
+# 本模組會使用的變數
+_MANAGED_VARS = ("EASYSTORE_SHOP_URL", "EASYSTORE_ACCESS_TOKEN", "ENABLE_WRITE_TOOLS")
+
+# 未展開的 ${VAR} 佔位字串
+_PLACEHOLDER_RE = re.compile(r"^\$\{[^}]*\}$")
+
+
+def _drop_blank_env():
+    """把空值與未展開的 ${VAR} 佔位字串當成「沒設定」。
+
+    .mcp.json 寫 "${EASYSTORE_ACCESS_TOKEN}" 而 shell 沒設定該變數時，
+    MCP client 會把字面字串 "${EASYSTORE_ACCESS_TOKEN}" 注入子行程。留著
+    它有兩個壞處：validate_config 誤判設定正常（實際打 API 才 401），以及
+    卡住後面 .env 的補值（load_dotenv 只看 key 在不在，不看值是否為空）。
+    """
+    for key in _MANAGED_VARS:
+        value = os.environ.get(key)
+        if value is None:
+            continue
+        stripped = value.strip()
+        if not stripped or _PLACEHOLDER_RE.match(stripped):
+            del os.environ[key]
 
 
 def _load_env_files():
@@ -36,6 +60,7 @@ def _load_env_files():
 
 
 # 執行環境變數加載
+_drop_blank_env()
 _load_env_files()
 
 EASYSTORE_SHOP_URL: str = os.environ.get("EASYSTORE_SHOP_URL", "").rstrip("/")

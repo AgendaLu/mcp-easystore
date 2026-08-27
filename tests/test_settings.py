@@ -93,6 +93,47 @@ def test_dotenv_still_supported(project):
     assert out["token"] == "tok_local"  # .env.local 蓋過 .env
 
 
+def test_unexpanded_placeholder_is_treated_as_unset(project):
+    """MCP client 對未設定的 ${VAR} 會原樣注入字串，不能當成有效值。
+
+    .mcp.json 寫 "${EASYSTORE_ACCESS_TOKEN}" 而 shell 沒設定該變數時，
+    子行程收到的是字面字串 "${EASYSTORE_ACCESS_TOKEN}"。若直接採用，
+    validate_config 會誤判設定正常，實際打 API 才拿到 401。
+    """
+    out = run_settings(project, {
+        "EASYSTORE_SHOP_URL": "${EASYSTORE_SHOP_URL}",
+        "EASYSTORE_ACCESS_TOKEN": "${EASYSTORE_ACCESS_TOKEN}",
+    })
+    assert out["shop_url"] == ""
+    assert out["token"] == ""
+    assert out["error"] is not None
+
+
+def test_dotenv_fills_in_when_client_injects_blank(project):
+    """client 注入空值時，.env 仍要能補上（空值等同沒設定）。"""
+    (project / ".env").write_text(
+        "EASYSTORE_SHOP_URL=https://from-dotenv.example.com\n"
+        "EASYSTORE_ACCESS_TOKEN=tok_dotenv\n"
+    )
+    out = run_settings(project, {
+        "EASYSTORE_SHOP_URL": "",
+        "EASYSTORE_ACCESS_TOKEN": "${EASYSTORE_ACCESS_TOKEN}",
+    })
+    assert out["shop_url"] == "https://from-dotenv.example.com"
+    assert out["token"] == "tok_dotenv"
+    assert out["error"] is None
+
+
+def test_real_env_still_wins_over_dotenv(project):
+    """真的有值的環境變數不受影響，仍然優先於 .env。"""
+    (project / ".env").write_text("EASYSTORE_ACCESS_TOKEN=tok_dotenv\n")
+    out = run_settings(project, {
+        "EASYSTORE_SHOP_URL": "https://shop.example.com",
+        "EASYSTORE_ACCESS_TOKEN": "tok_from_client",
+    })
+    assert out["token"] == "tok_from_client"
+
+
 def test_claude_settings_json_is_not_a_config_source(project):
     """settings.py 不再自行解析 .claude/settings*.json。
 

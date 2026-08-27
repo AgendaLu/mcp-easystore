@@ -101,6 +101,38 @@ Claude Desktop 有自己的設定檔，**不會**讀專案的 `.mcp.json`：
 
 ---
 
+## 權杖要放哪裡
+
+三個位置都不會進版控，差別在「誰讀得到」：
+
+| 位置 | 適合 | 風險 |
+|------|------|------|
+| `.env.local`（專案內） | 只有這個專案要用、想跟 repo 放一起 | 明文檔案，但範圍最小；記得 `chmod 600` |
+| shell 環境變數（`~/.zshrc`、direnv） | 同時要跑 scripts 與 MCP server | 每個從該 shell 啟動的程式都讀得到；`~/.zshrc` 常被連同 dotfiles 上傳 |
+| `~/.claude.json`（`claude mcp add` 寫入） | 只給 Claude 用、不想動 shell | 明文，且該檔常被備份或分享 |
+
+**`.env.local` 是預設建議**：範圍最小，且 `.gitignore` 已排除。
+
+```bash
+cp .env.example .env.local
+# 填入 EASYSTORE_SHOP_URL 與 EASYSTORE_ACCESS_TOKEN
+chmod 600 .env.local
+```
+
+`.mcp.json` 的 `${EASYSTORE_ACCESS_TOKEN:-}` 在 shell 沒設定時會注入空值，`config/settings.py`
+把空值視為沒設定，接著由 `.env.local` 補上——所以只填 `.env.local` 也能正常啟動，不必動 shell。
+
+> 用 direnv 的話 `.envrc` 也要進 `.gitignore`。要更嚴格可以把權杖放進 macOS Keychain，在
+> `.zshrc` 用 `export EASYSTORE_ACCESS_TOKEN=$(security find-generic-password -s easystore -w)`
+> 取出，磁碟上就不留明文。
+
+### 已經外洩怎麼辦
+
+權杖出現在終端輸出、log、截圖或被 commit 過，就當作已外洩：回後台客製擴充頁面重新產生，
+舊的立刻失效。權杖沒有有效期限，不主動換就會一直有效。
+
+若已經 commit 進版控，改檔案不夠——歷史紀錄還在，一定要重新產生權杖。
+
 ## 環境變數一覽
 
 | 變數 | 用途 | 必填 | 預設 |
@@ -110,15 +142,14 @@ Claude Desktop 有自己的設定檔，**不會**讀專案的 `.mcp.json`：
 | `ENABLE_WRITE_TOOLS` | 設 `true` 才註冊 41 個寫入工具 | ✗ | `false` |
 | `EASYSTORE_PYTHON` | 覆寫 `.mcp.json` 用的 python 路徑 | ✗ | `.venv/bin/python` |
 
-MCP server 由 client 啟動時，這些變數已經注入行程環境，`config/settings.py` 只讀 `os.environ`。
+MCP server 由 client 啟動時，這些變數已經注入行程環境，`config/settings.py` 只讀 `os.environ` 與 `.env` 檔案。
 
-**`.env` / `.env.local` 是給 `scripts/`、`tests/` 底下的獨立腳本用的**——直接跑 `python scripts/auth/test_connection.py` 時沒有 MCP client 幫你注入，才需要檔案：
+優先級：**有值的環境變數 > `.env.local` > `.env`**。
 
-```bash
-cp .env.example .env.local   # .env.local 已被 .gitignore 排除
-```
-
-優先級：已存在的環境變數 > `.env.local` > `.env`。
+空字串與未展開的 `${VAR}` 佔位字串一律視為「沒設定」，讓 `.env.local` 有機會補上。這是必要的：
+`.mcp.json` 裡沒帶預設值的 `${VAR}`，在 shell 未設定該變數時，MCP client 會把字面字串
+`"${VAR}"` 原樣注入子行程（實測結果），留著它會讓 `validate_config()` 誤判設定正常，直到打
+API 才拿到 401。
 
 ---
 
