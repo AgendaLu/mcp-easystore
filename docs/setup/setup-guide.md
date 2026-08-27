@@ -179,6 +179,15 @@ MCP server 啟動成功時，stderr 會出現：
 .venv/bin/python -c "import mcp, httpx, dotenv; print('ok')"
 ```
 
+### `ModuleNotFoundError: No module named 'mcp.server.fastmcp'`
+
+裝到 mcp 2.x 了。2.x 把 `FastMCP` 更名為 `MCPServer` 並移除舊的 import 路徑，本專案的程式仍是
+v1 API。`requirements.txt` 已鎖 `mcp>=1.2,<2`，重裝即可：
+
+```bash
+.venv/bin/pip install -r requirements.txt
+```
+
 ### 環境變數讀不到（`EASYSTORE_SHOP_URL 為空`）
 
 `config/settings.py` 只認 `os.environ` 與 `.env` 檔案，**不會**去讀 `.claude/settings.json` 或 `.claude/settings.local.json`——那兩個檔案沒有 `mcpServers` 或 MCP 環境變數這種欄位，寫在裡面不會生效。改用上面的方式 A 或 B。
