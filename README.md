@@ -69,15 +69,15 @@ Claude Desktop 的設定位置、`.env` 用法、故障排除見 [docs/setup/set
 
 `list_orders` / `get_order` / `list_fulfillments` / `get_fulfillment` / `list_transactions` / `get_transaction` / `list_checkouts` / `get_checkout`
 
-### 商品工具（product_tools）— 10 個
+### 商品工具（product_tools）— 9 個
 
-`list_products` / `get_product` / `list_variants` / `get_variant` / `list_product_images` / `list_collections` / `get_collection` / `list_collects` / `get_collects_count` / `get_collection_product_count`
+`list_products` / `get_product` / `list_variants` / `get_variant` / `list_product_images` / `list_collections` / `get_collection` / `list_collects` / `get_collects_count`
 
 ### 顧客工具（customer_tools）— 10 個
 
-`list_customers` / `search_customers` / `get_customer` / `get_customer_points` / `list_customer_addresses` / `get_customer_address` / `list_customer_attributes` / `get_customer_attribute` / `list_groups` / `get_group` / `list_group_customers`
+`list_customers` / `search_customers` / `get_customer` / `get_customer_points` / `list_customer_addresses` / `get_customer_address` / `list_customer_attributes` / `list_groups` / `get_group` / `list_group_customers`
 
-### 設定工具（settings_tools）— 12 個
+### 設定工具（settings_tools）— 14 個
 
 `list_webhooks` / `get_webhook` / `count_webhooks` / `list_curls` / `get_curl` / `count_curls` / `list_metafields` / `get_metafield` / `count_metafields` / `list_locations` / `get_location` / `list_gateways` / `list_es_gateways` / `get_customer_attribute`
 
@@ -181,7 +181,7 @@ python -m pytest tests/
 
 | 目錄 | 內容 |
 |------|------|
-| `docs/setup/` | 環境變數設定、Claude Desktop 設定 |
+| `docs/setup/` | 安裝設定指南（權杖取得、MCP 註冊、故障排除） |
 | `docs/api-reference/` | EasyStore API 端點清單 |
 | `docs/architecture/` | 專案結構說明（含工具端點對照表） |
 | `docs/optimization/` | Token 優化指南、RFM 分析指南 |

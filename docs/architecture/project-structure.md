@@ -15,6 +15,7 @@ mcp-easystore/
 ├── CLAUDE.md                        # Claude Code session 進入點說明
 ├── mcp_server.py                    # MCP 伺服器入口（stdio JSON-RPC 2.0）
 ├── requirements.txt
+├── .mcp.json                        # MCP client 註冊設定（憑證由環境變數展開）
 ├── .env / .env.example / .gitignore
 │
 ├── config/
@@ -27,9 +28,9 @@ mcp-easystore/
 │   ├── tool_registry.py             # 統一註冊（讀寫分離控制）
 │   ├── analytics_tools.py           # 數據分析（11 個）
 │   ├── order_tools.py               # 訂單（8 個）
-│   ├── product_tools.py             # 商品（10 個）
+│   ├── product_tools.py             # 商品（9 個）
 │   ├── customer_tools.py            # 客戶（10 個）
-│   ├── settings_tools.py            # 商店設定（12 個）
+│   ├── settings_tools.py            # 商店設定（14 個）
 │   ├── storefront_tools.py          # Storefront 建設（7 個）
 │   └── writes/                      # 寫入工具（ENABLE_WRITE_TOOLS=true 才載入）
 │       ├── __init__.py
@@ -70,7 +71,7 @@ mcp-easystore/
 | storefront | 7 | 9 |
 | **合計** | **58** | **41** |
 
-讀取工具預設全部載入（58 個）。寫入工具需 `ENABLE_WRITE_TOOLS=true` 才載入（41 個），啟用後總計 **99 個工具**。
+讀取工具預設全部載入（59 個）。寫入工具需 `ENABLE_WRITE_TOOLS=true` 才載入（41 個），啟用後總計 **100 個工具**。
 
 ---
 
@@ -318,7 +319,7 @@ mcp-easystore/
 | **合計** | **99** | |
 
 > [!NOTE]
-> Read tools：58 個（預設全部載入）。Write tools：41 個（需 `ENABLE_WRITE_TOOLS=true`）。
+> Read tools：59 個（預設全部載入）。Write tools：41 個（需 `ENABLE_WRITE_TOOLS=true`）。
 > 寫入工具預設不載入，避免 Claude 在分析任務中意外觸發寫入操作。
 > 刪除類工具需傳入 `confirm=true` 參數才執行；⚠️ 標示代表不可逆操作。
 
