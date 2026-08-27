@@ -5,6 +5,7 @@ EasyStore 電商平台的 MCP 伺服器。提供 **59 個讀取工具 + 41 個�
 ## 專案結構速覽
 
 ```
+.mcp.json            # MCP client 註冊設定（憑證由環境變數展開）
 mcp_server.py        # 入口（stdio JSON-RPC）
 config/settings.py   # 環境變數、API 設定
 tools/               # MCP 工具（按資源域分檔）
@@ -27,7 +28,7 @@ docs/                # 文件（見下方）
 
 ## 文件分類
 
-- `docs/setup/` — 環境變數、Cowork 設定（**新人從這裡開始**）
+- `docs/setup/` — 安裝設定指南：權杖取得、MCP 註冊、故障排除（**新人從這裡開始**）
 - `docs/api-reference/` — EasyStore / Shopline API 端點清單
 - `docs/architecture/` — 專案結構
 - `docs/optimization/` — 規劃中的優化（分析、checklist、實施指南）
