@@ -11,26 +11,7 @@ EasyStore MCP Server — 設定模組
 """
 import os
 import json
-import re
 from pathlib import Path
-
-
-_SHELL_VAR_RE = re.compile(r'\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-?([^}]*))?\}')
-
-
-def _expand_shell_vars(value):
-    """解析 ${VAR} 與 ${VAR:default} / ${VAR:-default} 語法。
-    若 VAR 已在 os.environ 中則用其值，否則用 default（無 default 時回傳空字串）。
-    """
-    if not isinstance(value, str):
-        return value
-
-    def repl(match):
-        var_name = match.group(1)
-        default = match.group(2) if match.group(2) is not None else ""
-        return os.environ.get(var_name, default)
-
-    return _SHELL_VAR_RE.sub(repl, value)
 
 
 def _load_env_files():
@@ -74,10 +55,8 @@ def _load_claude_settings_env():
 
                     # 只設定尚未在環境中的變數（優先級更高的源已經設定過了）
                     for key, value in env_vars.items():
-                        if key not in os.environ:
-                            expanded = _expand_shell_vars(value)
-                            if expanded:
-                                os.environ[key] = str(expanded)
+                        if key not in os.environ and value:
+                            os.environ[key] = str(value)
 
                     break  # 只加載最高優先級的檔案
             except Exception as e:
