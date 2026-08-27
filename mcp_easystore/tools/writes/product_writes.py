@@ -8,7 +8,7 @@ product_writes.py — 商品與分類寫入工具（8 個）
 from typing import Optional, List, Any
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_post, api_put, api_delete, to_json
+from mcp_easystore.tools.base_tool import api_post, api_put, api_delete, to_json
 
 
 # ── Pydantic Models ───────────────────────────────────────

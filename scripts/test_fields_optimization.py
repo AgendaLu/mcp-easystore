@@ -24,8 +24,8 @@ from dotenv import load_dotenv
 env_file = Path(__file__).parent.parent / ".env"
 load_dotenv(env_file, override=True)
 
-from tools.base_tool import api_get, api_get_nested, to_json
-from config.settings import validate_config, EASYSTORE_SHOP_URL, EASYSTORE_ACCESS_TOKEN
+from mcp_easystore.tools.base_tool import api_get, api_get_nested, to_json
+from mcp_easystore.config.settings import validate_config, EASYSTORE_SHOP_URL, EASYSTORE_ACCESS_TOKEN
 
 # ========== 工具函数 ==========
 

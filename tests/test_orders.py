@@ -15,9 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
 load_dotenv()
 
-from tools.order_tools import register_order_tools
-from tools.base_tool import api_get, to_json
-from config.settings import validate_config, EASYSTORE_SHOP_URL, EASYSTORE_ACCESS_TOKEN
+from mcp_easystore.tools.order_tools import register_order_tools
+from mcp_easystore.tools.base_tool import api_get, to_json
+from mcp_easystore.config.settings import validate_config, EASYSTORE_SHOP_URL, EASYSTORE_ACCESS_TOKEN
 from mcp.server.fastmcp import FastMCP
 
 async def main():

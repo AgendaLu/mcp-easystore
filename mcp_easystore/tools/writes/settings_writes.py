@@ -9,7 +9,7 @@ settings_writes.py — 系統設定寫入工具（9 個）
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_post, api_put, api_delete, to_json
+from mcp_easystore.tools.base_tool import api_post, api_put, api_delete, to_json
 
 
 # ── Pydantic Models ───────────────────────────────────────

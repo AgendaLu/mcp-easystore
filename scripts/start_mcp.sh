@@ -31,4 +31,4 @@ echo "   店鋪: $EASYSTORE_SHOP_URL"
 echo "   寫入工具: ${ENABLE_WRITE_TOOLS:=false}"
 echo ""
 
-python3 mcp_server.py
+python3 -m mcp_easystore.server

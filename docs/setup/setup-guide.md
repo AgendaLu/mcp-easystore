@@ -1,6 +1,8 @@
 # 安裝設定指南
 
-從零到可用，兩步：**拿到 API 權杖** → **註冊 MCP server**。
+從零到可用三步：**拿到 API 權杖** → **裝 uv** → **註冊 MCP server**。
+
+使用者端不需要 clone repo、不需要裝 Python、不需要建虛擬環境。
 
 ---
 
@@ -28,55 +30,27 @@
 
 ---
 
-## 步驟 2：註冊 MCP server
-
-先建好虛擬環境與依賴：
+## 步驟 2：安裝 uv（只做一次）
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+brew install uv
 ```
 
-接著挑一種註冊方式。
+或 `curl -LsSf https://astral.sh/uv/install.sh | sh`。
 
-### 方式 A：`.mcp.json`（專案內建，推薦）
+uv 是單一執行檔，**連 Python runtime 都會自己下載**——機器上沒有 Python、或版本太舊，都不影響。
+使用者不需要建虛擬環境，也不需要跑任何 `pip` 指令。
 
-repo 根目錄已經有 [`.mcp.json`](../../.mcp.json)，憑證從 shell 環境變數展開，不寫死在檔案裡：
+## 步驟 3：註冊 MCP server
 
-```json
-{
-  "mcpServers": {
-    "easystore": {
-      "type": "stdio",
-      "command": "${EASYSTORE_PYTHON:-.venv/bin/python}",
-      "args": ["mcp_server.py"],
-      "env": {
-        "EASYSTORE_SHOP_URL": "${EASYSTORE_SHOP_URL}",
-        "EASYSTORE_ACCESS_TOKEN": "${EASYSTORE_ACCESS_TOKEN}",
-        "ENABLE_WRITE_TOOLS": "${ENABLE_WRITE_TOOLS:-false}"
-      }
-    }
-  }
-}
-```
-
-在 shell（`~/.zshrc` 或 direnv）設好三個變數，再從專案目錄啟動 Claude Code：
+### Claude Code
 
 ```bash
-export EASYSTORE_SHOP_URL=https://yourshop.easystore.co
-export EASYSTORE_ACCESS_TOKEN=你的權杖
-export ENABLE_WRITE_TOOLS=false
-```
-
-第一次啟動時 Claude Code 會問要不要信任這個專案的 MCP server，允許即可。
-
-虛擬環境不在 `.venv/` 的話，用 `EASYSTORE_PYTHON` 指到實際的 python 執行檔（可用絕對路徑）。
-
-### 方式 B：`claude mcp add`（憑證只留在本機）
-
-不想把憑證放進 shell 設定檔就用這個，一行指令寫進 `~/.claude.json`：
-
-```bash
-claude mcp add easystore --scope local -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co -e EASYSTORE_ACCESS_TOKEN=你的權杖 -e ENABLE_WRITE_TOOLS=false -- /絕對路徑/mcp-easystore/.venv/bin/python /絕對路徑/mcp-easystore/mcp_server.py
+claude mcp add easystore --scope local \
+  -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co \
+  -e EASYSTORE_ACCESS_TOKEN=你的權杖 \
+  -e ENABLE_WRITE_TOOLS=false \
+  -- uvx --from git+https://github.com/AgendaLu/mcp-easystore mcp-easystore
 ```
 
 確認連線：
@@ -85,19 +59,73 @@ claude mcp add easystore --scope local -e EASYSTORE_SHOP_URL=https://yourshop.ea
 claude mcp list
 ```
 
-看到 `easystore ✔ Connected` 就成功了。
+看到 `easystore ✔ Connected` 就成功了。第一次啟動 uvx 要下載 Python 與依賴，約 30 秒；之後走快取，啟動很快。
 
-> ⚠️ 這條路徑會把權杖明文寫進 `~/.claude.json`。該檔案常被連同 dotfiles 備份或分享，注意別外流。
+> ⚠️ 這會把權杖明文寫進 `~/.claude.json`。該檔案常被連同 dotfiles 備份或分享，注意別外流。
 
 ### Claude Desktop
 
-Claude Desktop 有自己的設定檔，**不會**讀專案的 `.mcp.json`：
+Claude Desktop 有自己的設定檔：
 
 ```
 ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
 
-格式與方式 B 寫入的內容相同，`command` 必須用 `.venv/bin/python` 的**絕對路徑**，否則找不到已安裝的套件。
+```json
+{
+  "mcpServers": {
+    "easystore": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/AgendaLu/mcp-easystore", "mcp-easystore"],
+      "env": {
+        "EASYSTORE_SHOP_URL": "https://yourshop.easystore.co",
+        "EASYSTORE_ACCESS_TOKEN": "你的權杖",
+        "ENABLE_WRITE_TOOLS": "false"
+      }
+    }
+  }
+}
+```
+
+Desktop 從 GUI 啟動時 `PATH` 可能找不到 `uvx`，這時把 `command` 換成絕對路徑（`which uvx` 查）。改完要重啟 Desktop。
+
+### 更新
+
+uvx 每次啟動會抓 repo 最新版，重啟 client 即可。要強制重抓：
+
+```bash
+uv cache clean mcp-easystore
+```
+
+## 開發者安裝（要改程式碼才需要）
+
+```bash
+git clone https://github.com/AgendaLu/mcp-easystore.git && cd mcp-easystore
+python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+```
+
+repo 根目錄的 [`.mcp.json`](../../.mcp.json) 走本地 venv（不強制裝 uv），憑證從 shell 環境變數展開：
+
+```json
+{
+  "mcpServers": {
+    "easystore": {
+      "type": "stdio",
+      "command": "${EASYSTORE_PYTHON:-.venv/bin/python}",
+      "args": ["-m", "mcp_easystore.server"],
+      "env": {
+        "EASYSTORE_SHOP_URL": "${EASYSTORE_SHOP_URL:-}",
+        "EASYSTORE_ACCESS_TOKEN": "${EASYSTORE_ACCESS_TOKEN:-}",
+        "ENABLE_WRITE_TOOLS": "${ENABLE_WRITE_TOOLS:-false}"
+      }
+    }
+  }
+}
+```
+
+從專案目錄啟動 Claude Code，第一次會問要不要信任這個專案的 MCP server。憑證放 `.env.local` 即可（見下節），不必 export。
+
+虛擬環境不在 `.venv/` 的話，用 `EASYSTORE_PYTHON` 指到實際的 python 執行檔。
 
 ---
 
@@ -119,7 +147,9 @@ cp .env.example .env.local
 chmod 600 .env.local
 ```
 
-`.mcp.json` 的 `${EASYSTORE_ACCESS_TOKEN:-}` 在 shell 沒設定時會注入空值，`config/settings.py`
+以上是**開發者**的選擇。透過 uvx 安裝的使用者只有 `~/.claude.json`（或 Desktop 設定檔）這一個位置。
+
+開發用的 `.mcp.json` 其 `${EASYSTORE_ACCESS_TOKEN:-}` 在 shell 沒設定時會注入空值，settings.py
 把空值視為沒設定，接著由 `.env.local` 補上——所以只填 `.env.local` 也能正常啟動，不必動 shell。
 
 > 用 direnv 的話 `.envrc` 也要進 `.gitignore`。要更嚴格可以把權杖放進 macOS Keychain，在
@@ -142,7 +172,8 @@ chmod 600 .env.local
 | `ENABLE_WRITE_TOOLS` | 設 `true` 才註冊 41 個寫入工具 | ✗ | `false` |
 | `EASYSTORE_PYTHON` | 覆寫 `.mcp.json` 用的 python 路徑 | ✗ | `.venv/bin/python` |
 
-MCP server 由 client 啟動時，這些變數已經注入行程環境，`config/settings.py` 只讀 `os.environ` 與 `.env` 檔案。
+MCP server 由 client 啟動時，這些變數已經注入行程環境，`mcp_easystore/config/settings.py` 只讀
+`os.environ` 與**工作目錄下**的 `.env` 檔案（透過 uvx 安裝時程式在 site-packages，套件目錄下不會有 .env）。
 
 優先級：**有值的環境變數 > `.env.local` > `.env`**。
 
@@ -155,10 +186,12 @@ API 才拿到 401。
 
 ## 驗證
 
+以下是開發者用的（透過 uvx 安裝的使用者不需要）：
+
 ```bash
-python3 scripts/check_env.py          # 環境變數有沒有讀到
-python3 scripts/auth/test_connection.py   # API 打得通嗎
-python3 -m pytest tests/              # 單元測試
+.venv/bin/python scripts/check_env.py          # 環境變數有沒有讀到
+.venv/bin/python scripts/auth/test_connection.py   # API 打得通嗎
+.venv/bin/python -m pytest tests/              # 單元測試
 ```
 
 MCP server 啟動成功時，stderr 會出現：
@@ -173,24 +206,26 @@ MCP server 啟動成功時，stderr 會出現：
 
 ### `claude mcp list` 顯示 Failed to connect
 
-多半是 `command` 指到沒裝依賴的 python。確認：
+用 uvx 安裝的話，多半是 client 找不到 `uvx`。用絕對路徑（`which uvx`）取代 `command` 裡的 `uvx`。
+
+開發環境則多半是 `command` 指到沒裝依賴的 python。確認：
 
 ```bash
-.venv/bin/python -c "import mcp, httpx, dotenv; print('ok')"
+.venv/bin/python -c "import mcp_easystore, httpx, dotenv; print('ok')"
 ```
 
 ### `ModuleNotFoundError: No module named 'mcp.server.fastmcp'`
 
 裝到 mcp 2.x 了。2.x 把 `FastMCP` 更名為 `MCPServer` 並移除舊的 import 路徑，本專案的程式仍是
-v1 API。`requirements.txt` 已鎖 `mcp>=1.2,<2`，重裝即可：
+v1 API。`pyproject.toml` 已鎖 `mcp>=1.2,<2`，重裝即可：
 
 ```bash
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -e ".[dev]"
 ```
 
 ### 環境變數讀不到（`EASYSTORE_SHOP_URL 為空`）
 
-`config/settings.py` 只認 `os.environ` 與 `.env` 檔案，**不會**去讀 `.claude/settings.json` 或 `.claude/settings.local.json`——那兩個檔案沒有 `mcpServers` 或 MCP 環境變數這種欄位，寫在裡面不會生效。改用上面的方式 A 或 B。
+`mcp_easystore/config/settings.py` 只認 `os.environ` 與工作目錄下的 `.env` 檔案，**不會**去讀 `.claude/settings.json` 或 `.claude/settings.local.json`——那兩個檔案沒有 `mcpServers` 或 MCP 環境變數這種欄位，寫在裡面不會生效。
 
 用 `.env.local` 時注意等號兩邊不要有空格：
 
@@ -217,6 +252,6 @@ EASYSTORE_SHOP_URL = https://yourshop.easystore.co  # ✗
 
 ## 安全性
 
-- 權杖只放在 shell 環境變數、`~/.claude.json` 或 `.env.local`，三者都不進版控
+- 權杖只放在 `~/.claude.json`、shell 環境變數或 `.env.local`，三者都不進版控
 - `.env.example` 是範本，永遠不填真值
 - 權杖曾經出現在終端輸出、log 或截圖 → 回後台重新產生

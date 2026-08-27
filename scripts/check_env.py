@@ -93,7 +93,7 @@ def check_env_vars():
     print("-" * 60)
 
     sys.path.insert(0, str(root_dir))
-    from config import settings
+    from mcp_easystore.config import settings
 
     config_errors = []
 

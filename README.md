@@ -15,11 +15,15 @@ EasyStore 電商平台的 [Model Context Protocol (MCP)](https://modelcontextpro
 
 ## 快速開始
 
-### 1. 安裝依賴
+不需要 clone、不需要裝 Python、不需要建虛擬環境。
+
+### 1. 安裝 uv（只做一次）
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+brew install uv
 ```
+
+或 `curl -LsSf https://astral.sh/uv/install.sh | sh`。uv 是單一執行檔，連 Python runtime 都會自己準備。
 
 ### 2. 取得 API 權杖
 
@@ -29,21 +33,35 @@ EasyStore 後台 → **安裝擴充** → **更多** → **客製擴充** → �
 
 ### 3. 註冊 MCP server
 
-repo 根目錄已附 [`.mcp.json`](.mcp.json)，憑證從環境變數展開。在 shell 設好變數後從專案目錄啟動 Claude Code 即可：
-
 ```bash
-export EASYSTORE_SHOP_URL=https://yourshop.easystore.co
-export EASYSTORE_ACCESS_TOKEN=你的權杖
-export ENABLE_WRITE_TOOLS=false   # 設 true 才載入 41 個寫入工具
+claude mcp add easystore --scope local \
+  -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co \
+  -e EASYSTORE_ACCESS_TOKEN=你的權杖 \
+  -e ENABLE_WRITE_TOOLS=false \
+  -- uvx --from git+https://github.com/AgendaLu/mcp-easystore mcp-easystore
 ```
 
-不想動 shell 設定檔的話，改用一行指令把設定寫進 `~/.claude.json`：
+或直接寫進設定檔：
 
-```bash
-claude mcp add easystore --scope local -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co -e EASYSTORE_ACCESS_TOKEN=你的權杖 -- /絕對路徑/mcp-easystore/.venv/bin/python /絕對路徑/mcp-easystore/mcp_server.py
+```json
+{
+  "mcpServers": {
+    "easystore": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/AgendaLu/mcp-easystore", "mcp-easystore"],
+      "env": {
+        "EASYSTORE_SHOP_URL": "https://yourshop.easystore.co",
+        "EASYSTORE_ACCESS_TOKEN": "你的權杖",
+        "ENABLE_WRITE_TOOLS": "false"
+      }
+    }
+  }
+}
 ```
 
-Claude Desktop 的設定位置、`.env` 用法、故障排除見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
+第一次啟動時 uvx 會自動下載 Python 與依賴（約 30 秒），之後走快取。更新就是重啟——uvx 會抓 repo 最新版。
+
+Claude Desktop 設定位置、開發者安裝方式、故障排除見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
 
 ---
 

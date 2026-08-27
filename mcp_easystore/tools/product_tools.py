@@ -7,7 +7,7 @@ product_tools.py — 商品讀取工具（~12 個）
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict
 from mcp.server.fastmcp import FastMCP
-from tools.base_tool import api_get, api_get_nested, to_json, extract_resource
+from mcp_easystore.tools.base_tool import api_get, api_get_nested, to_json, extract_resource
 
 
 class ListProductsInput(BaseModel):

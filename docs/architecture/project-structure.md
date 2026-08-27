@@ -13,8 +13,7 @@ mcp-easystore/
 ├── LICENSE
 ├── SKILL.md                         # Claude skill 定義（easystore-analyst）
 ├── CLAUDE.md                        # Claude Code session 進入點說明
-├── mcp_server.py                    # MCP 伺服器入口（stdio JSON-RPC 2.0）
-├── requirements.txt
+├── pyproject.toml                   # 打包設定（entry point: mcp-easystore）
 ├── .mcp.json                        # MCP client 註冊設定（憑證由環境變數展開）
 ├── .env / .env.example / .gitignore
 │

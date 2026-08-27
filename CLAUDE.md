@@ -5,10 +5,12 @@ EasyStore 電商平台的 MCP 伺服器。提供 **59 個讀取工具 + 41 個�
 ## 專案結構速覽
 
 ```
-.mcp.json            # MCP client 註冊設定（憑證由環境變數展開）
-mcp_server.py        # 入口（stdio JSON-RPC）
-config/settings.py   # 環境變數、API 設定
-tools/               # MCP 工具（按資源域分檔）
+pyproject.toml       # 打包設定（entry point: mcp-easystore）
+.mcp.json            # 開發用 MCP 註冊設定（走本地 venv）
+mcp_easystore/       # 套件本體
+  ├── server.py        入口（stdio JSON-RPC，main() 為 console script）
+  ├── config/settings.py  環境變數、API 設定
+  └── tools/           MCP 工具（按資源域分檔）
   ├── base_tool.py     共用 HTTP client（GET / POST / PUT / DELETE）
   ├── tool_registry.py 統一註冊（讀寫分離）
   ├── analytics_tools.py / order_tools.py / product_tools.py
@@ -65,4 +67,5 @@ python -m pytest tests/
 ## 注意
 
 - `SKILL.md` 是 Claude skill 定義（`easystore-analyst`），不是一般文件。
-- `mcp_server.py` 由 MCP 客戶端透過 stdio 啟動，不是直接執行的 CLI。
+- `mcp_easystore/server.py` 由 MCP 客戶端透過 stdio 啟動，不是直接執行的 CLI。
+- 使用者端安裝走 `uvx --from git+…`，不需要 clone 或建 venv；開發時才用 `pip install -e ".[dev]"`。
