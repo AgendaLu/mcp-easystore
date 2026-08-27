@@ -33,6 +33,10 @@ EasyStore 後台 → **安裝擴充** → **更多** → **客製擴充** → �
 
 ### 3. 註冊 MCP server
 
+看你用哪個 client，二選一：
+
+**Claude Code** — 用指令，不必手改 JSON（會寫進 `~/.claude.json`）：
+
 ```bash
 claude mcp add easystore --scope local \
   -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co \
@@ -41,7 +45,14 @@ claude mcp add easystore --scope local \
   -- uvx --from git+https://github.com/AgendaLu/mcp-easystore mcp-easystore
 ```
 
-或直接寫進設定檔：
+**Claude Desktop** — 沒有對應的 CLI 指令，手動編輯設定檔：
+
+```
+~/Library/Application Support/Claude/claude_desktop_config.json    # macOS
+%APPDATA%\Claude\claude_desktop_config.json                        # Windows
+```
+
+把 `easystore` 這一項**併進**既有的 `mcpServers`（檔案裡通常還有 `preferences` 之類的其他設定，別整份覆蓋掉）：
 
 ```json
 {
@@ -59,9 +70,28 @@ claude mcp add easystore --scope local \
 }
 ```
 
+Desktop 從 Dock／Finder 啟動時不會載入 shell 的 `PATH`，`"command": "uvx"` 多半會連不上——改成絕對路徑（`which uvx` 查，Homebrew 通常是 `/opt/homebrew/bin/uvx`）。改完要 Cmd+Q 完全結束再開，關視窗不算。
+
 第一次啟動時 uvx 會自動下載 Python 與依賴（約 30 秒），之後走快取。更新就是重啟——uvx 會抓 repo 最新版。
 
+### 4. 確認裝好了
+
+Claude Code 跑 `claude mcp list`，看到 `easystore ✔ Connected` 就成功。Claude Desktop 則是重啟後點聊天框的 `+` → **Connectors**，清單裡要有 `easystore`。
+
+再問一句「我的商店叫什麼名字？」，Claude 會呼叫 `easystore_get_store_info` 回答你。
+
 Claude Desktop 設定位置、開發者安裝方式、故障排除見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
+
+## 支援哪些 Claude 介面
+
+| 介面 | 支援 | 說明 |
+|------|------|------|
+| Claude Code（CLI / IDE 擴充） | ✅ | `claude mcp add`，見上 |
+| Claude Desktop 一般聊天 | ✅ | 寫進 `claude_desktop_config.json` |
+| Claude Cowork | ❌ | 只接受從 claude.ai 帳號同步的遠端連接器，不會啟動本機 stdio 行程 |
+| claude.ai 網頁版 / 手機版 | ❌ | 同上 |
+
+本專案是 stdio 本機伺服器——Claude 在**你自己的電腦上**把它當子行程啟動，權杖從頭到尾沒離開過你的機器。代價是 Cowork 與網頁版用不到：那兩邊的連接器是由 Anthropic 的雲端主動連出去的，伺服器必須公網可達（HTTPS + OAuth）。詳見 [Anthropic 的自訂連接器說明](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
 
 ---
 

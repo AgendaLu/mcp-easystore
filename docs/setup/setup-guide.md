@@ -4,6 +4,10 @@
 
 使用者端不需要 clone repo、不需要裝 Python、不需要建虛擬環境。
 
+> **先確認你用的介面支援**：本專案是 stdio 本機伺服器，只在 **Claude Code** 與 **Claude Desktop 一般聊天**能用。
+> **Claude Cowork 和 claude.ai 網頁版不支援**——那兩邊的連接器由 Anthropic 雲端主動連出去，只吃公網可達的遠端 MCP，不會啟動你機器上的行程。
+> 硬把本專案寫進 `claude_desktop_config.json` 再開 Cowork，工具會顯示成 `This tool has been disabled in your connector settings`。
+
 ---
 
 ## 步驟 1：取得 EasyStore API 權杖
@@ -186,7 +190,25 @@ API 才拿到 401。
 
 ## 驗證
 
-以下是開發者用的（透過 uvx 安裝的使用者不需要）：
+### 使用者
+
+**Claude Code**：
+
+```bash
+claude mcp list
+```
+
+`easystore ✔ Connected` 就通了。顯示 `Failed to connect` 看下方故障排除。
+
+**Claude Desktop**：重啟後點聊天框的 `+` → **Connectors**，清單裡要有 `easystore`。沒有的話設定檔位置或 JSON 格式有問題。
+
+兩邊都可以再問一句「我的商店叫什麼名字？」，Claude 會呼叫 `easystore_get_store_info`——工具真的被觸發、而且權杖有效，這樣才算驗完。連得上但這句話回 401，是權杖的問題不是安裝的問題。
+
+啟用了寫入工具的話，改問「有哪些工具可以用？」，數量應該是 100 個而不是 59 個。
+
+### 開發者
+
+以下透過 uvx 安裝的使用者不需要：
 
 ```bash
 .venv/bin/python scripts/check_env.py          # 環境變數有沒有讀到
