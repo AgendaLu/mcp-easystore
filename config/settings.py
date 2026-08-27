@@ -3,14 +3,14 @@ EasyStore MCP Server — 設定模組
 從環境變數讀取 API 認證資訊，不接受硬編碼。
 
 環境變數優先級（由高到低）：
-  1. Claude Cowork 注入的環境變數（已存在 os.environ）
-  2. .claude/settings.local.json 中的 env 字段
-  3. .env.local 檔案
-  4. .env 檔案
-  5. 系統環境變數
+  1. MCP client 注入的環境變數（.mcp.json / claude mcp add，已存在 os.environ）
+  2. .env.local 檔案
+  3. .env 檔案
+
+.env 兩個檔案是給 scripts/ 底下的獨立腳本用的；MCP server 由 client 啟動時，
+環境變數已經注入 os.environ，不會走到檔案這條路。
 """
 import os
-import json
 from pathlib import Path
 
 
@@ -35,37 +35,8 @@ def _load_env_files():
         load_dotenv(env_local_file, override=True)
 
 
-def _load_claude_settings_env():
-    """從 .claude/settings.local.json 或 .claude/settings.json 加載環境變數"""
-    root_dir = Path(__file__).parent.parent
-    claude_dir = root_dir / ".claude"
-
-    # 優先級：settings.local.json > settings.json
-    settings_files = [
-        claude_dir / "settings.local.json",
-        claude_dir / "settings.json",
-    ]
-
-    for settings_file in settings_files:
-        if settings_file.exists():
-            try:
-                with open(settings_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    env_vars = config.get("env", {})
-
-                    # 只設定尚未在環境中的變數（優先級更高的源已經設定過了）
-                    for key, value in env_vars.items():
-                        if key not in os.environ and value:
-                            os.environ[key] = str(value)
-
-                    break  # 只加載最高優先級的檔案
-            except Exception as e:
-                print(f"[WARNING] 無法加載 {settings_file.name}: {e}")
-
-
 # 執行環境變數加載
 _load_env_files()
-_load_claude_settings_env()
 
 EASYSTORE_SHOP_URL: str = os.environ.get("EASYSTORE_SHOP_URL", "").rstrip("/")
 EASYSTORE_ACCESS_TOKEN: str = os.environ.get("EASYSTORE_ACCESS_TOKEN", "")

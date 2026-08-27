@@ -38,8 +38,8 @@ docs/                # 文件（見下方）
 ## 開發慣例
 
 - **語言**：Python 3.12
-- **MCP framework**：`fastmcp`
-- **環境變數**：`.env` 載入；範例見 `.env.example`，說明見 [docs/setup/env-variable-guide.md](docs/setup/env-variable-guide.md)
+- **MCP framework**：官方 `mcp` SDK 內建的 `mcp.server.fastmcp.FastMCP`（不是獨立的 `fastmcp` 套件）
+- **環境變數**：由 MCP client 注入（`.mcp.json` / `claude mcp add`）；`config/settings.py` 只讀 `os.environ` 與 `.env`。`.env` 是給 `scripts/`、`tests/` 的獨立腳本用的。設定說明見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)
 - **寫入工具**：預設不載入。需 `ENABLE_WRITE_TOOLS=true` 才會註冊（避免誤操作）。
 - **工具命名**：`easystore_<verb>_<resource>`，例如 `easystore_list_orders`、`easystore_get_revenue_summary`。
 - **Token 優化**：新增/修改工具時，優先考慮 `fields` 參數縮減 response 大小（見 `docs/optimization/implementation-guide.md`）。

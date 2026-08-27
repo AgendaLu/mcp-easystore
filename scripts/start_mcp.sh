@@ -17,12 +17,12 @@ source .venv/bin/activate
 # 檢查環境變數
 if [ -z "$EASYSTORE_SHOP_URL" ]; then
     echo "⚠️  環境變數 EASYSTORE_SHOP_URL 未設定"
-    echo "   請確保已設定在 .env.local 或 .claude/settings.local.json"
+    echo "   請 export 環境變數，或寫在 .env.local（見 docs/setup/setup-guide.md）"
 fi
 
 if [ -z "$EASYSTORE_ACCESS_TOKEN" ]; then
     echo "⚠️  環境變數 EASYSTORE_ACCESS_TOKEN 未設定"
-    echo "   請確保已設定在 .env.local 或 .claude/settings.local.json"
+    echo "   請 export 環境變數，或寫在 .env.local（見 docs/setup/setup-guide.md）"
 fi
 
 # 啟動 MCP Server

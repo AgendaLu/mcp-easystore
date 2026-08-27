@@ -18,47 +18,32 @@ EasyStore 電商平台的 [Model Context Protocol (MCP)](https://modelcontextpro
 ### 1. 安裝依賴
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
-### 2. 設定環境變數
+### 2. 取得 API 權杖
 
-複製 `.env.example` 並填入您的 EasyStore 設定：
+EasyStore 後台 → **安裝擴充** → **更多** → **客製擴充** → 命名 → 設定存取範疇 → 儲存後顯示 **API 存取權杖**。
+
+要用寫入工具的話，存取範疇記得勾寫入權限（[官方說明](https://support.easystore.co/zh-tw/article/easystore-api-1amargb/)）。
+
+### 3. 註冊 MCP server
+
+repo 根目錄已附 [`.mcp.json`](.mcp.json)，憑證從環境變數展開。在 shell 設好變數後從專案目錄啟動 Claude Code 即可：
 
 ```bash
-cp .env.example .env
+export EASYSTORE_SHOP_URL=https://yourshop.easystore.co
+export EASYSTORE_ACCESS_TOKEN=你的權杖
+export ENABLE_WRITE_TOOLS=false   # 設 true 才載入 41 個寫入工具
 ```
 
-```env
-EASYSTORE_SHOP_URL=https://your-shop.myeasystore.com
-EASYSTORE_ACCESS_TOKEN=your_access_token
+不想動 shell 設定檔的話，改用一行指令把設定寫進 `~/.claude.json`：
 
-# 啟用寫入工具（預設關閉）
-# ENABLE_WRITE_TOOLS=true
+```bash
+claude mcp add easystore --scope local -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co -e EASYSTORE_ACCESS_TOKEN=你的權杖 -- /絕對路徑/mcp-easystore/.venv/bin/python /絕對路徑/mcp-easystore/mcp_server.py
 ```
 
-完整說明見 [docs/setup/env-variable-guide.md](docs/setup/env-variable-guide.md)。
-
-### 3. 設定 Claude Desktop
-
-在 Claude Desktop 的 MCP 設定中加入：
-
-```json
-{
-  "mcpServers": {
-    "easystore": {
-      "command": "python",
-      "args": ["/path/to/mcp-easystore/mcp_server.py"],
-      "env": {
-        "EASYSTORE_SHOP_URL": "https://your-shop.myeasystore.com",
-        "EASYSTORE_ACCESS_TOKEN": "your_access_token"
-      }
-    }
-  }
-}
-```
-
-完整設定路徑說明見 [docs/setup/](docs/setup/)。
+Claude Desktop 的設定位置、`.env` 用法、故障排除見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
 
 ---
 

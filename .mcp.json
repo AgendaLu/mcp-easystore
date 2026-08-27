@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "easystore": {
+      "type": "stdio",
+      "command": "${EASYSTORE_PYTHON:-.venv/bin/python}",
+      "args": ["mcp_server.py"],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "EASYSTORE_SHOP_URL": "${EASYSTORE_SHOP_URL}",
+        "EASYSTORE_ACCESS_TOKEN": "${EASYSTORE_ACCESS_TOKEN}",
+        "ENABLE_WRITE_TOOLS": "${ENABLE_WRITE_TOOLS:-false}"
+      }
+    }
+  }
+}
