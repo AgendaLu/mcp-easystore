@@ -17,8 +17,15 @@ from mcp_easystore.config.settings import get_base_url, get_headers, validate_co
 
 # ── 錯誤處理 ──────────────────────────────────────────────
 
-def handle_api_error(e: Exception, context: str = "") -> str:
+def handle_api_error(e: Exception, context: str = "", url: str = "") -> str:
+    """把 exception 轉成人看得懂的錯誤字串。
+
+    url 一律附在訊息尾端：少了它，「404」看起來像路徑寫錯，實際上常常是
+    EASYSTORE_SHOP_URL 指到一個不存在的商店，而使用者無從得知自己正在打哪個網域。
+    權杖走 EasyStore-Access-Token header、不進 URL，所以這裡不會外洩憑證。
+    """
     prefix = f"[{context}] " if context else ""
+    suffix = f" 請求 URL：{url}" if url else ""
     if isinstance(e, httpx.HTTPStatusError):
         status = e.response.status_code
         try:
@@ -27,21 +34,24 @@ def handle_api_error(e: Exception, context: str = "") -> str:
         except Exception:
             msg = e.response.text[:200]
         if status == 401:
-            return f"{prefix}Error 401: Access Token 無效或缺失，請確認 EASYSTORE_ACCESS_TOKEN。"
+            return f"{prefix}Error 401: Access Token 無效或缺失，請確認 EASYSTORE_ACCESS_TOKEN。{suffix}"
         if status == 403:
-            return f"{prefix}Error 403: 權限不足，請確認 App 的 scope 包含所需資源。"
+            return f"{prefix}Error 403: 權限不足，請確認 App 的 scope 包含所需資源。{suffix}"
         if status == 404:
-            return f"{prefix}Error 404: 資源不存在，請確認 ID 或路徑是否正確。"
+            return (
+                f"{prefix}Error 404: 商店不存在或已停用（請確認 EASYSTORE_SHOP_URL 指到的商店還在），"
+                f"或路徑／ID 錯誤。{suffix}"
+            )
         if status == 422:
-            return f"{prefix}Error 422: 請求參數錯誤 — {msg}"
+            return f"{prefix}Error 422: 請求參數錯誤 — {msg}{suffix}"
         if status == 429:
-            return f"{prefix}Error 429: API 呼叫頻率超限，請稍後再試。"
-        return f"{prefix}Error {status}: {msg}"
+            return f"{prefix}Error 429: API 呼叫頻率超限，請稍後再試。{suffix}"
+        return f"{prefix}Error {status}: {msg}{suffix}"
     if isinstance(e, httpx.TimeoutException):
-        return f"{prefix}Error: 請求超時（30s），請稍後重試。"
+        return f"{prefix}Error: 請求超時（30s），請稍後重試。{suffix}"
     if isinstance(e, httpx.ConnectError):
-        return f"{prefix}Error: 無法連線 — 請確認 EASYSTORE_SHOP_URL 是否正確。"
-    return f"{prefix}Error: {type(e).__name__} — {str(e)}"
+        return f"{prefix}Error: 無法連線 — 請確認 EASYSTORE_SHOP_URL 是否正確。{suffix}"
+    return f"{prefix}Error: {type(e).__name__} — {str(e)}{suffix}"
 
 
 # ── 核心 GET 請求 ─────────────────────────────────────────
@@ -65,7 +75,7 @@ async def api_get(path: str, params: Optional[dict] = None) -> dict | list | str
             resp.raise_for_status()
             return resp.json()
     except Exception as e:
-        return handle_api_error(e, path)
+        return handle_api_error(e, path, url)
 
 
 async def api_get_nested(path: str, params: Optional[dict] = None) -> dict | str:
@@ -85,7 +95,7 @@ async def api_get_nested(path: str, params: Optional[dict] = None) -> dict | str
             resp.raise_for_status()
             return resp.json()
     except Exception as e:
-        return handle_api_error(e, path)
+        return handle_api_error(e, path, url)
 
 
 # ── 核心寫入請求 ──────────────────────────────────────────
@@ -102,7 +112,7 @@ async def api_post(path: str, data: Optional[dict] = None) -> dict | str:
             resp.raise_for_status()
             return resp.json()
     except Exception as e:
-        return handle_api_error(e, path)
+        return handle_api_error(e, path, url)
 
 
 async def api_put(path: str, data: Optional[dict] = None) -> dict | str:
@@ -117,7 +127,7 @@ async def api_put(path: str, data: Optional[dict] = None) -> dict | str:
             resp.raise_for_status()
             return resp.json()
     except Exception as e:
-        return handle_api_error(e, path)
+        return handle_api_error(e, path, url)
 
 
 async def api_delete(path: str) -> dict | str:
@@ -136,7 +146,7 @@ async def api_delete(path: str) -> dict | str:
             except Exception:
                 return {"status": "deleted"}
     except Exception as e:
-        return handle_api_error(e, path)
+        return handle_api_error(e, path, url)
 
 
 # ── 分頁輔助 ──────────────────────────────────────────────

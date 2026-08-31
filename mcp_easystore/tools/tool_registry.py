@@ -12,6 +12,7 @@ from mcp_easystore.tools.analytics_tools import register_analytics_tools
 from mcp_easystore.tools.order_tools import register_order_tools
 from mcp_easystore.tools.product_tools import register_product_tools
 from mcp_easystore.tools.customer_tools import register_customer_tools
+from mcp_easystore.tools.diagnostics_tools import register_diagnostics_tools
 from mcp_easystore.tools.settings_tools import register_settings_tools
 from mcp_easystore.tools.storefront_tools import register_storefront_tools
 
@@ -33,6 +34,7 @@ def register_all_tools(mcp: FastMCP) -> int:
     register_customer_tools(mcp)
     register_settings_tools(mcp)
     register_storefront_tools(mcp)
+    register_diagnostics_tools(mcp)
 
     # ── 寫入工具（需明確啟用）────────────────────────────
     if ENABLE_WRITE_TOOLS:

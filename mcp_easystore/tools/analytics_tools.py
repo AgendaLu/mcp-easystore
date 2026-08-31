@@ -73,7 +73,9 @@ def register_analytics_tools(mcp: FastMCP):
             str: JSON 格式的商店設定資料。
         """
         data = await api_get("store")
-        return to_json(data.get("store", data) if isinstance(data, dict) else data)
+        if isinstance(data, str):  # 錯誤訊息
+            return data
+        return to_json(data.get("store", data))
 
     @mcp.tool(
         name="easystore_get_order_summary",
@@ -103,7 +105,9 @@ def register_analytics_tools(mcp: FastMCP):
         for status in ["open", "cancelled", "archived"]:
             q = {**query, "status": status}
             data = await api_get("orders", q)
-            results[status] = data.get("total_count", 0) if isinstance(data, dict) else 0
+            if isinstance(data, str):  # 錯誤訊息：中止，不要用 0 填補
+                return data
+            results[status] = data.get("total_count", 0)
 
         total = sum(results.values())
         return to_json({
@@ -188,7 +192,9 @@ def register_analytics_tools(mcp: FastMCP):
         for fs in ["fulfilled", "partially_fulfilled", "unfulfilled"]:
             q = {**query, "fulfillment_status": fs}
             data = await api_get("orders", q)
-            results[fs] = data.get("total_count", 0) if isinstance(data, dict) else 0
+            if isinstance(data, str):  # 錯誤訊息：中止，不要用 0 填補
+                return data
+            results[fs] = data.get("total_count", 0)
 
         return to_json({
             "period": {"from": min_dt or "all", "to": max_dt or "now"},
@@ -222,7 +228,9 @@ def register_analytics_tools(mcp: FastMCP):
         for fs in ["paid", "pending", "unpaid", "refunded", "voided", "cod"]:
             q = {**query, "financial_status": fs}
             data = await api_get("orders", q)
-            results[fs] = data.get("total_count", 0) if isinstance(data, dict) else 0
+            if isinstance(data, str):  # 錯誤訊息：中止，不要用 0 填補
+                return data
+            results[fs] = data.get("total_count", 0)
 
         return to_json({
             "period": {"from": min_dt or "all", "to": max_dt or "now"},
@@ -276,9 +284,11 @@ def register_analytics_tools(mcp: FastMCP):
 
         if isinstance(pub_data, str):
             return pub_data
+        if isinstance(unpub_data, str):
+            return unpub_data
 
-        pub_count = pub_data.get("total_count", 0) if isinstance(pub_data, dict) else 0
-        unpub_count = unpub_data.get("total_count", 0) if isinstance(unpub_data, dict) else 0
+        pub_count = pub_data.get("total_count", 0)
+        unpub_count = unpub_data.get("total_count", 0)
 
         return to_json({
             "published_products": pub_count,
@@ -320,10 +330,12 @@ def register_analytics_tools(mcp: FastMCP):
         results = []
         for col in collections:
             count_data = await api_get("collects", {"collection_id": col["id"], "limit": 1})
+            if isinstance(count_data, str):  # 錯誤訊息：中止，不要用 0 填補
+                return count_data
             results.append({
                 "collection_id": col["id"],
                 "collection_name": col.get("name"),
-                "product_count": count_data.get("total_count", 0) if isinstance(count_data, dict) else 0,
+                "product_count": count_data.get("total_count", 0),
             })
 
         results.sort(key=lambda x: x["product_count"], reverse=True)

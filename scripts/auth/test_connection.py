@@ -13,22 +13,30 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from mcp_easystore.config.settings import validate_config, EASYSTORE_SHOP_URL, get_base_url
+from mcp_easystore.config.settings import describe_config
 from mcp_easystore.tools.base_tool import api_get
 
 async def main():
     print("=== EasyStore MCP Server — 連線驗證 ===\n")
 
-    # 1. 設定檢查
-    err = validate_config()
-    if err:
-        print(f"❌ 設定錯誤：{err}")
-        print("\n請複製 .env.example 為 .env 並填入正確值，")
+    # 1. 設定檢查（與 easystore_diagnose 工具同一份邏輯）
+    #
+    # ⚠️ 這個腳本讀的是「你現在這個 shell 看得到的設定」。MCP server 由 Claude
+    #    Desktop / Claude Code 啟動時，環境變數是 client 注入的，可能與這裡不同。
+    #    要確認 server 實際生效的設定，請在對話中呼叫 easystore_diagnose。
+    desc = describe_config()
+    if desc["config_error"]:
+        print(f"❌ 設定錯誤：{desc['config_error']}")
+        print("\n請複製 .env.example 為 .env.local 並填入正確值，")
         print("或確認環境變數 EASYSTORE_SHOP_URL 和 EASYSTORE_ACCESS_TOKEN 已設定。")
         sys.exit(1)
 
-    print(f"✅ 商店 URL：{EASYSTORE_SHOP_URL}")
-    print(f"✅ Base URL：{get_base_url()}")
+    print(f"✅ 商店 URL：{desc['shop_url']}")
+    print(f"✅ Base URL：{desc['base_url']}")
+    print(f"✅ 權杖指紋：{desc['access_token']}")
+    print(f"ℹ️  來源：{desc['sources']['EASYSTORE_SHOP_URL']}")
+    print(f"ℹ️  讀到的 env 檔：{', '.join(desc['env_files']['loaded']) or '（無）'}")
+    print("ℹ️  這是本 shell 的設定；MCP server 生效的設定請用 easystore_diagnose 確認。")
     print()
 
     # 2. 測試 store endpoint

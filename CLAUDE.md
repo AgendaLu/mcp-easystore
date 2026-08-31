@@ -1,6 +1,6 @@
 # mcp-easystore
 
-EasyStore 電商平台的 MCP 伺服器。提供 **59 個讀取工具 + 41 個寫入工具**給 Claude，讓 LLM 能透過自然語言查詢訂單、商品、客戶、營收等資料，並可執行取消訂單、退款、顧客分群等寫入操作。重點目標：**token 使用效率優化**。
+EasyStore 電商平台的 MCP 伺服器。提供 **60 個讀取工具 + 41 個寫入工具**給 Claude，讓 LLM 能透過自然語言查詢訂單、商品、客戶、營收等資料，並可執行取消訂單、退款、顧客分群等寫入操作。重點目標：**token 使用效率優化**。
 
 ## 專案結構速覽
 
@@ -13,6 +13,7 @@ mcp_easystore/           # 套件本體（uvx 安裝的就是這包）
   └── tools/               MCP 工具（按資源域分檔）
         ├── base_tool.py       共用 HTTP client（GET / POST / PUT / DELETE）
         ├── tool_registry.py   統一註冊（讀寫分離，數量由實際註冊狀態計算）
+        ├── diagnostics_tools.py（1）  easystore_diagnose：生效設定 + 連線自檢
         ├── analytics_tools.py（11）/ order_tools.py（8）/ product_tools.py（9）
         ├── customer_tools.py（10）/ settings_tools.py（14）/ storefront_tools.py（7）
         └── writes/            寫入工具（ENABLE_WRITE_TOOLS=true 才載入）
