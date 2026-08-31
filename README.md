@@ -17,6 +17,18 @@ EasyStore 電商平台的 [Model Context Protocol (MCP)](https://modelcontextpro
 
 不需要 clone、不需要裝 Python、不需要建虛擬環境。
 
+**先看你要在哪裡用。三個介面，但只有兩份設定要寫：**
+
+| 你想用的介面 | 要寫哪份設定 | 怎麼寫 |
+|---|---|---|
+| **terminal 的 `claude` 指令** | `~/.claude.json` | 步驟 3-A：`claude mcp add`（不必手改 JSON） |
+| **Claude Code**（IDE 擴充 / 桌面版的 Code 分頁） | 同上，共用一份 | 同上，設定一次兩邊都有 |
+| **Claude Cowork** | `claude_desktop_config.json` | 步驟 3-B：手動編輯 Claude Desktop 的設定檔 |
+
+三個都要用，就兩份都寫（同一組權杖，各寫一次）。Cowork 沒有自己的 MCP 設定介面——它用的是 **Claude Desktop 已註冊的本機 server**，所以設定寫在 Desktop 的設定檔裡，Cowork 才看得到工具。
+
+> claude.ai 網頁版與手機版用不到本專案：那邊的連接器由 Anthropic 雲端主動連出去，需要公網可達的遠端 MCP，而本專案是跑在你自己電腦上的 stdio 伺服器。
+
 ### 1. 安裝 uv（只做一次）
 
 ```bash
@@ -31,21 +43,43 @@ EasyStore 後台 → **安裝擴充** → **更多** → **客製擴充** → �
 
 要用寫入工具的話，存取範疇記得勾寫入權限（[官方說明](https://support.easystore.co/zh-tw/article/easystore-api-1amargb/)）。
 
+權杖只在儲存當下顯示一次，關掉就要重新產生。
+
+### 2.5 先確認你的商店網址（五秒，能省一小時）
+
+`EASYSTORE_SHOP_URL` 填錯是最常見的失敗，而且症狀會誤導人（所有工具回 404，卻不知道是網域錯）。**在寫進設定檔之前**先驗一次：
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -H "EasyStore-Access-Token: 你的權杖" https://你的商店.easy.co/api/3.0/store.json
+```
+
+- 回 `200` → 這個網址正確，可以往下走
+- 回 `404` → **商店網址錯**，不是權杖問題。網域是 `你的商店.easy.co`，不是 `easystore.co`（那是 EasyStore 官網），也不一定等於後台網址列看到的那串
+- 回 `401` → 網址對，**權杖**錯或已重新產生
+
+正確的網域就是 `/store.json` 回應裡的 `easystore_domain` 欄位。裝好之後隨時可以用 `easystore_diagnose` 工具查（見步驟 4）。
+
 ### 3. 註冊 MCP server
 
-看你用哪個 client，二選一：
+依你要用的介面，寫 A、B 或兩者都寫：
 
-**Claude Code** — 用指令，不必手改 JSON（會寫進 `~/.claude.json`）：
+#### 3-A. terminal CLI 與 Claude Code
+
+用指令，不必手改 JSON（會寫進 `~/.claude.json`）：
 
 ```bash
 claude mcp add easystore --scope local \
-  -e EASYSTORE_SHOP_URL=https://yourshop.easystore.co \
+  -e EASYSTORE_SHOP_URL=https://yourshop.easy.co \
   -e EASYSTORE_ACCESS_TOKEN=你的權杖 \
   -e ENABLE_WRITE_TOOLS=false \
   -- uvx --from git+https://github.com/AgendaLu/mcp-easystore mcp-easystore
 ```
 
-**Claude Desktop** — 沒有對應的 CLI 指令，手動編輯設定檔：
+`--scope local` 是「只有目前這個專案目錄」。想在任何目錄下都能用，改成 `--scope user`。
+
+#### 3-B. Claude Cowork（與 Claude Desktop 一般聊天）
+
+這兩個介面共用 Claude Desktop 的設定檔，沒有對應的 CLI 指令，要手動編輯：
 
 ```
 ~/Library/Application Support/Claude/claude_desktop_config.json    # macOS
@@ -61,7 +95,7 @@ claude mcp add easystore --scope local \
       "command": "uvx",
       "args": ["--from", "git+https://github.com/AgendaLu/mcp-easystore", "mcp-easystore"],
       "env": {
-        "EASYSTORE_SHOP_URL": "https://yourshop.easystore.co",
+        "EASYSTORE_SHOP_URL": "https://yourshop.easy.co",
         "EASYSTORE_ACCESS_TOKEN": "你的權杖",
         "ENABLE_WRITE_TOOLS": "false"
       }
@@ -70,28 +104,73 @@ claude mcp add easystore --scope local \
 }
 ```
 
-Desktop 從 Dock／Finder 啟動時不會載入 shell 的 `PATH`，`"command": "uvx"` 多半會連不上——改成絕對路徑（`which uvx` 查，Homebrew 通常是 `/opt/homebrew/bin/uvx`）。改完要 Cmd+Q 完全結束再開，關視窗不算。
+JSON 不能有註解或尾逗號，`env` 的每個值都必須是**字串**（`"false"` 不是 `false`）。既有的 `mcpServers` 底下要用**併入**的，別整份覆蓋掉。
+
+Desktop 從 Dock／Finder 啟動時不會載入 shell 的 `PATH`，`"command": "uvx"` 多半會連不上——改成絕對路徑（`which uvx` 查，Homebrew 通常是 `/opt/homebrew/bin/uvx`）。改完要 Cmd+Q 完全結束再開，關視窗不算；Cowork 也要一起重開才會看到工具。
 
 第一次啟動時 uvx 會自動下載 Python 與依賴（約 30 秒），之後走快取。更新就是重啟——uvx 會抓 repo 最新版。
 
 ### 4. 確認裝好了
 
-Claude Code 跑 `claude mcp list`，看到 `easystore ✔ Connected` 就成功。Claude Desktop 則是重啟後點聊天框的 `+` → **Connectors**，清單裡要有 `easystore`。
+先確認 client 連得上：
 
-再問一句「我的商店叫什麼名字？」，Claude 會呼叫 `easystore_get_store_info` 回答你。
+| 介面 | 怎麼確認 |
+|---|---|
+| terminal CLI / Claude Code | `claude mcp list` → `easystore ✔ Connected` |
+| Claude Desktop | 重啟後點聊天框的 `+` → **Connectors**，清單裡要有 `easystore` |
+| Claude Cowork | 工具清單裡找得到 `easystore_*`（來自 Desktop 註冊的那份） |
 
-Claude Desktop 設定位置、開發者安裝方式、故障排除見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
+連得上不代表設定對。**接著一定要跑這一句**，任何介面都一樣：
+
+```
+呼叫 easystore_diagnose
+```
+
+它會回報 server 實際生效的設定，並實打一次 EasyStore API：
+
+```json
+{
+  "config": {
+    "shop_url": "https://yourshop.easy.co",
+    "access_token": "len=32 sha1=a1b2c3d4",
+    "sources": { "EASYSTORE_SHOP_URL": "環境變數（MCP client 注入或 shell）" }
+  },
+  "tools": { "total": 60, "write_tools_loaded": 0 },
+  "store_probe": { "http_status": 200, "store_name": "你的商店名稱", "easystore_domain": "yourshop.easy.co" }
+}
+```
+
+`store_probe.http_status` 是 `200`、`store_name` 是你的店名，才算真的裝好了。輸出不含權杖明文，只有指紋（長度 + sha1 前 8 碼），可以安全貼給別人看。
+
+## 出錯了怎麼查
+
+**先跑 `easystore_diagnose`**，再對照下表。不要用猜的——這個工具存在的理由，就是它會直接說出「現在生效的是哪一份設定」。
+
+| 症狀 | 哪個參數沒設好 | 怎麼確認 |
+|---|---|---|
+| 所有工具回 **404** | `EASYSTORE_SHOP_URL` 指到不存在或已停用的商店 | 錯誤訊息尾端會印出實際請求的 URL，看那個網域對不對；`diagnose` 的 `store_probe.easystore_domain` 是正確值 |
+| 回 **401** | `EASYSTORE_ACCESS_TOKEN` 錯、或已在後台重新產生 | 比對 `diagnose` 的 `access_token` 指紋；後台重新產生權杖後舊的立刻失效 |
+| 讀取正常、寫入回 **403** | EasyStore 後台**客製擴充的存取範疇**沒給寫入權限 | 回步驟 2 調整範疇。這與 `ENABLE_WRITE_TOOLS` 是兩層獨立開關 |
+| 找不到寫入工具 | `ENABLE_WRITE_TOOLS` 不是 `true`，或改完沒重啟 client | `diagnose` 的 `tools.write_tools_loaded` 應為 41 |
+| 改了設定卻沒反應 | 改到了**不生效的那一份** | 看 `diagnose` 的 `config.sources`，它會指出每個變數究竟來自 client 注入還是哪一個 `.env` 檔 |
+| `claude mcp list` 顯示 Failed to connect | `command` 找不到（`uvx` 不在 PATH） | 改用 `which uvx` 的絕對路徑 |
+| Cowork 看不到工具 | 設定只寫進了 `~/.claude.json` | Cowork 讀的是 `claude_desktop_config.json`，見步驟 3-B |
+
+`easystore_diagnose` 連 `http_status` 都拿不到（例如 `config_error`），代表變數根本沒進到 server——先確認你改的是步驟 3-A 還是 3-B 對應的那個檔案，以及有沒有完全重啟 client。
+
+完整的設定優先級、權杖存放位置、開發者安裝方式見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
 
 ## 支援哪些 Claude 介面
 
-| 介面 | 支援 | 說明 |
+| 介面 | 支援 | 設定來源 |
 |------|------|------|
-| Claude Code（CLI / IDE 擴充） | ✅ | `claude mcp add`，見上 |
-| Claude Desktop 一般聊天 | ✅ | 寫進 `claude_desktop_config.json` |
-| Claude Cowork | ❌ | 只接受從 claude.ai 帳號同步的遠端連接器，不會啟動本機 stdio 行程 |
-| claude.ai 網頁版 / 手機版 | ❌ | 同上 |
+| terminal 的 `claude` 指令 | ✅ | `~/.claude.json`（`claude mcp add`） |
+| Claude Code（IDE 擴充 / 桌面版 Code 分頁） | ✅ | 同上 |
+| Claude Desktop 一般聊天 | ✅ | `claude_desktop_config.json` |
+| Claude Cowork | ✅ | 同上——用 Desktop 已註冊的本機 server |
+| claude.ai 網頁版 / 手機版 | ❌ | 只接受公網可達的遠端連接器 |
 
-本專案是 stdio 本機伺服器——Claude 在**你自己的電腦上**把它當子行程啟動，權杖從頭到尾沒離開過你的機器。代價是 Cowork 與網頁版用不到：那兩邊的連接器是由 Anthropic 的雲端主動連出去的，伺服器必須公網可達（HTTPS + OAuth）。詳見 [Anthropic 的自訂連接器說明](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
+本專案是 stdio 本機伺服器——Claude 在**你自己的電腦上**把它當子行程啟動，權杖從頭到尾沒離開過你的機器。代價是網頁版與手機版用不到：那邊的連接器是由 Anthropic 的雲端主動連出去的，伺服器必須公網可達（HTTPS + OAuth）。詳見 [Anthropic 的自訂連接器說明](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)。
 
 ---
 
@@ -101,7 +180,10 @@ Claude Desktop 設定位置、開發者安裝方式、故障排除見 [docs/setu
 
 | 工具 | 說明 |
 |------|------|
-| `easystore_diagnose` | 目前生效的設定、每個變數的來源、權杖指紋（無明文），並實打一次 `/store.json` |
+| `easystore_diagnose` | 目前生效的設定、來源、權杖指紋（無明文），並實打一次 `/store.json` |
+
+查不到資料、工具全部回 404 或 401 時先問這個。它會告訴你 server 實際讀到的是哪一份設定——
+Claude Desktop 設定檔、`~/.claude.json`、還是 repo 裡的 `.env`。
 
 ### 分析工具（analytics_tools）— 11 個
 

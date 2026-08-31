@@ -6,7 +6,7 @@ stdio JSON-RPC 2.0，供 Claude Code / Claude Desktop 使用。
 讀取工具預設全部啟用；寫入工具需設定 ENABLE_WRITE_TOOLS=true。
 
 環境變數：
-  EASYSTORE_SHOP_URL       商店網址，例如 https://yourshop.easystore.co
+  EASYSTORE_SHOP_URL       商店網址，例如 https://yourshop.easy.co
   EASYSTORE_ACCESS_TOKEN   EasyStore App Access Token
   ENABLE_WRITE_TOOLS       設為 true 才啟用寫入工具（預設 false）
 
