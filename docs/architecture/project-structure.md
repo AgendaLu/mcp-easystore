@@ -29,6 +29,7 @@ mcp-easystore/
 │       ├── __init__.py
 │       ├── base_tool.py             # 共用 HTTP client（GET / POST / PUT / DELETE）
 │       ├── tool_registry.py         # 統一註冊（讀寫分離控制）
+│       ├── diagnostics_tools.py     # 自我診斷（1 個）
 │       ├── analytics_tools.py       # 數據分析（11 個）
 │       ├── order_tools.py           # 訂單（8 個）
 │       ├── product_tools.py         # 商品（9 個）
@@ -70,15 +71,16 @@ mcp-easystore/
 
 | 模組 | 讀取 | 寫入 |
 |------|:---:|:---:|
+| diagnostics | 1 | — |
 | analytics | 11 | — |
 | orders | 8 | 6 |
 | products | 9 | 8 |
 | customers | 10 | 9 |
 | settings | 14 | 9 |
 | storefront | 7 | 9 |
-| **合計** | **59** | **41** |
+| **合計** | **60** | **41** |
 
-讀取工具預設全部載入（59 個）。寫入工具需 `ENABLE_WRITE_TOOLS=true` 才載入（41 個），啟用後總計 **100 個工具**。
+讀取工具預設全部載入（60 個）。寫入工具需 `ENABLE_WRITE_TOOLS=true` 才載入（41 個），啟用後總計 **101 個工具**。
 
 ---
 
@@ -312,6 +314,7 @@ mcp-easystore/
 
 | 檔案 | 工具數 | 類型 |
 |------|:------:|------|
+| `diagnostics_tools.py` | 1 | READ |
 | `analytics_tools.py` | 11 | READ |
 | `order_tools.py` | 8 | READ |
 | `product_tools.py` | 10 | READ |
@@ -326,7 +329,7 @@ mcp-easystore/
 | **合計** | **99** | |
 
 > [!NOTE]
-> Read tools：59 個（預設全部載入）。Write tools：41 個（需 `ENABLE_WRITE_TOOLS=true`）。
+> Read tools：60 個（預設全部載入）。Write tools：41 個（需 `ENABLE_WRITE_TOOLS=true`）。
 > 寫入工具預設不載入，避免 Claude 在分析任務中意外觸發寫入操作。
 > 刪除類工具需傳入 `confirm=true` 參數才執行；⚠️ 標示代表不可逆操作。
 
