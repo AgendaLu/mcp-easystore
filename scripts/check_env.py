@@ -95,26 +95,25 @@ def check_env_vars():
     sys.path.insert(0, str(root_dir))
     from mcp_easystore.config import settings
 
-    config_errors = []
+    # 與 easystore_diagnose 工具同一份邏輯，避免「腳本測的是另一份設定」
+    desc = settings.describe_config()
 
-    if settings.EASYSTORE_SHOP_URL:
-        print(f"✓ EASYSTORE_SHOP_URL: {settings.EASYSTORE_SHOP_URL}")
-    else:
-        config_errors.append("❌ EASYSTORE_SHOP_URL 未設定")
+    print(f"  商店 URL   : {desc['shop_url']}")
+    print(f"  Base URL   : {desc['base_url']}")
+    print(f"  權杖指紋   : {desc['access_token']}")
+    print(f"  寫入工具   : {'已啟用' if desc['enable_write_tools'] else '未啟用（預設）'}")
+    print(f"  工作目錄   : {desc['cwd']}")
+    print(f"  套件根目錄 : {desc['package_root']}")
+    print(f"  讀到的 env 檔：{', '.join(desc['env_files']['loaded']) or '（無）'}")
+    if desc["dropped_as_unset"]:
+        print(f"  視為未設定 : {', '.join(desc['dropped_as_unset'])}（空值或未展開的 ${{VAR}}）")
 
-    if settings.EASYSTORE_ACCESS_TOKEN:
-        token = settings.EASYSTORE_ACCESS_TOKEN
-        print(f"✓ EASYSTORE_ACCESS_TOKEN: 已設定（{token[:4]}…{token[-4:]}）")
-    else:
-        config_errors.append("❌ EASYSTORE_ACCESS_TOKEN 未設定")
+    print("\n  每個變數的實際來源：")
+    for key, source in desc["sources"].items():
+        print(f"    - {key}: {source}")
 
-    status = "已啟用" if settings.ENABLE_WRITE_TOOLS else "未啟用（預設）"
-    print(f"✓ ENABLE_WRITE_TOOLS: {status}")
-
-    if config_errors:
-        print("\n⚠️  配置問題：")
-        for error in config_errors:
-            print(f"  {error}")
+    if desc["config_error"]:
+        print(f"\n⚠️  配置問題：{desc['config_error']}")
     else:
         print("\n✅ 所有配置正常！")
 

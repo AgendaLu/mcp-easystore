@@ -373,7 +373,7 @@ annotations={
 
 ```python
 # .env 或环境变量
-EASYSTORE_SHOP_URL = "https://yourshop.easystore.co"
+EASYSTORE_SHOP_URL = "https://yourshop.easy.co"
 EASYSTORE_ACCESS_TOKEN = "..."
 ENABLE_WRITE_TOOLS = "true"  # 仅启用写入工具
 ```

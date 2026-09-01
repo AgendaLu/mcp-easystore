@@ -20,14 +20,17 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # 子行程裡跑的探針：印出 settings 解析後的結果
 PROBE = """
-import json, sys
-sys.path.insert(0, ".")
+import json, os, sys
+sys.path.insert(0, os.environ.get("PROBE_SYS_PATH", "."))
 from mcp_easystore.config import settings
 print(json.dumps({
     "shop_url": settings.EASYSTORE_SHOP_URL,
     "token": settings.EASYSTORE_ACCESS_TOKEN,
     "write_tools": settings.ENABLE_WRITE_TOOLS,
     "error": settings.validate_config(),
+    "loaded_env_files": settings.LOADED_ENV_FILES,
+    "sources": settings.ENV_VAR_SOURCES,
+    "describe": settings.describe_config(),
 }))
 """
 
@@ -46,12 +49,16 @@ def project(tmp_path):
     return tmp_path
 
 
-def run_settings(project_dir, env=None):
-    """在乾淨環境中載入 settings，回傳解析結果。"""
+def run_settings(project_dir, env=None, sys_path=None):
+    """在乾淨環境中載入 settings，回傳解析結果。
+
+    sys_path：套件所在目錄（預設等於工作目錄）。要驗「cwd 與套件位置不同」時才會用到。
+    """
     child_env = {
         k: v for k, v in os.environ.items()
         if not k.startswith("EASYSTORE_") and k != "ENABLE_WRITE_TOOLS"
     }
+    child_env["PROBE_SYS_PATH"] = str(sys_path) if sys_path else "."
     child_env.update(env or {})
     result = subprocess.run(
         [sys.executable, "-c", PROBE],
@@ -170,3 +177,52 @@ def test_claude_settings_local_json_is_not_a_config_source(project):
 
     out = run_settings(project)
     assert out["write_tools"] is False  # 預設關閉，沒被 .claude 檔案打開
+
+
+def test_dotenv_is_found_from_package_root_when_cwd_differs(project):
+    """工作目錄不是專案根目錄時，.env 仍要被讀到。
+
+    MCP client 啟動 server 時工作目錄通常是 `/`，只看 cwd 的話 repo 裡的 .env
+    從頭到尾不會被讀——但它看起來像個有效的設定來源，改了沒反應會讓人往錯的
+    方向查。改成從套件位置回推專案根目錄後這條路才真的通。
+    """
+    (project / ".env").write_text(
+        "EASYSTORE_SHOP_URL=https://from-package-root.example.com\n"
+        "EASYSTORE_ACCESS_TOKEN=tok_pkg\n"
+    )
+    elsewhere = project / "elsewhere"
+    elsewhere.mkdir()
+
+    out = run_settings(elsewhere, sys_path=project)
+    assert out["shop_url"] == "https://from-package-root.example.com"
+    assert out["token"] == "tok_pkg"
+    assert str(project / ".env") in out["loaded_env_files"]
+
+
+def test_describe_config_reports_effective_source_without_token(project):
+    """describe_config 要指出設定來自哪裡，且不得含權杖明文。"""
+    (project / ".env").write_text("EASYSTORE_SHOP_URL=https://from-dotenv.example.com\n")
+    out = run_settings(project, {"EASYSTORE_ACCESS_TOKEN": "super_secret_token"})
+
+    desc = out["describe"]
+    assert desc["shop_url"] == "https://from-dotenv.example.com"
+    assert desc["base_url"] == "https://from-dotenv.example.com/api/3.0"
+    assert "super_secret_token" not in json.dumps(desc, ensure_ascii=False)
+    assert desc["access_token"].startswith("len=18 sha1=")
+    assert desc["sources"]["EASYSTORE_SHOP_URL"].endswith(".env")
+    assert "環境變數" in desc["sources"]["EASYSTORE_ACCESS_TOKEN"]
+    assert desc["config_error"] is None
+
+
+def test_env_var_always_wins_over_dotenv_local(project):
+    """.env.local 不得蓋掉 client 注入的環境變數。
+
+    先前 .env.local 是 override=True，開發安裝下一份殘留的 .env.local 會悄悄
+    蓋過 Claude Desktop 的設定，正是這次事故那一類「不知道哪份設定生效」的坑。
+    """
+    (project / ".env.local").write_text("EASYSTORE_SHOP_URL=https://stale-local.example.com\n")
+    out = run_settings(project, {
+        "EASYSTORE_SHOP_URL": "https://from-client.example.com",
+        "EASYSTORE_ACCESS_TOKEN": "tok",
+    })
+    assert out["shop_url"] == "https://from-client.example.com"

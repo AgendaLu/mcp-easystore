@@ -68,7 +68,7 @@
 ```bash
 # 测试 checkouts 是否支持 fields
 curl -H "EasyStore-Access-Token: YOUR_TOKEN" \
-  "https://yourshop.easystore.co/api/3.0/checkouts.json?limit=1&fields="
+  "https://yourshop.easy.co/api/3.0/checkouts.json?limit=1&fields="
 
 # 查看返回的字段数量
 ```
