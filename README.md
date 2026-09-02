@@ -17,6 +17,8 @@ EasyStore 電商平台的 [Model Context Protocol (MCP)](https://modelcontextpro
 
 不需要 clone、不需要裝 Python、不需要建虛擬環境。
 
+> **懶人路線**：在 Claude Code 裡貼「讀 `docs/setup/setup-guide.md`，照『給 AI 代理的安裝 runbook』幫我裝好 easystore MCP」，AI 會裝 uv、驗網址、改設定檔、驗收。你只要先去後台拿權杖，最後重啟 Claude Desktop。詳見 [setup-guide](docs/setup/setup-guide.md#讓-ai-幫你裝在-claude-code-裡)。
+
 **先看你要在哪裡用。三個介面，但只有兩份設定要寫：**
 
 | 你想用的介面 | 要寫哪份設定 | 怎麼寫 |
@@ -55,7 +57,8 @@ curl -s -o /dev/null -w "%{http_code}\n" -H "EasyStore-Access-Token: 你的權�
 
 - 回 `200` → 這個網址正確，可以往下走
 - 回 `404` → **商店網址錯**，不是權杖問題。網域是 `你的商店.easy.co`，不是 `easystore.co`（那是 EasyStore 官網），也不一定等於後台網址列看到的那串
-- 回 `401` → 網址對，**權杖**錯或已重新產生
+- 回 `403` → 網址對，**權杖**錯或已重新產生（範疇不足也是這個碼）
+- 回 `401` → header 根本沒帶到權杖：變數名打錯，或值是空字串
 
 正確的網域就是 `/store.json` 回應裡的 `easystore_domain` 欄位。裝好之後隨時可以用 `easystore_diagnose` 工具查（見步驟 4）。
 
@@ -106,7 +109,8 @@ claude mcp add easystore --scope local \
 
 JSON 不能有註解或尾逗號，`env` 的每個值都必須是**字串**（`"false"` 不是 `false`）。既有的 `mcpServers` 底下要用**併入**的，別整份覆蓋掉。
 
-Desktop 從 Dock／Finder 啟動時不會載入 shell 的 `PATH`，`"command": "uvx"` 多半會連不上——改成絕對路徑（`which uvx` 查，Homebrew 通常是 `/opt/homebrew/bin/uvx`）。改完要 Cmd+Q 完全結束再開，關視窗不算；Cowork 也要一起重開才會看到工具。
+Desktop 從 Dock／Finder 啟動時不會載入 shell 的 `PATH`，`"command": "uvx"` 多半會連不上——改成絕對路徑（`which uvx` 查，Homebrew 通常是 `/opt/homebrew/bin/uvx`）。
+**改這個檔案之前，先把 Claude 全部關掉**（Desktop 按 Cmd+Q，關視窗不算；Cowork 也關）。跑著的 client 會回寫這個設定檔，你存的檔會被蓋掉。改完存檔，再重新開啟。
 
 第一次啟動時 uvx 會自動下載 Python 與依賴（約 30 秒），之後走快取。更新就是重啟——uvx 會抓 repo 最新版。
 

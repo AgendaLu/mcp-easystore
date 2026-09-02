@@ -105,6 +105,27 @@ def test_404_names_both_possible_causes():
     assert "EASYSTORE_SHOP_URL" in msg
 
 
+def test_403_names_bad_token_before_scope():
+    """實測 EasyStore：帶了無效權杖回 403（不是 401），只講 scope 會把人導錯方向。
+
+    對 glamglow.easy.co 打 /store.json 的實際結果：
+        沒帶 header 或空字串 → 401
+        帶了錯誤的權杖       → 403 {"code": "permission_denied"}
+    """
+    url = "https://dressup12.easy.co/api/3.0/orders.json"
+    msg = handle_api_error(_status_error(403, url), "orders", url)
+    assert "權杖" in msg, f"403 沒提到權杖可能是錯的：{msg}"
+    assert "範疇" in msg or "scope" in msg, f"403 沒提到存取範疇：{msg}"
+
+
+def test_401_says_the_token_never_arrived():
+    """401 只在完全沒帶到權杖時出現，不要跟「權杖錯」混為一談。"""
+    url = "https://dressup12.easy.co/api/3.0/orders.json"
+    msg = handle_api_error(_status_error(401, url), "orders", url)
+    assert "沒帶到" in msg or "缺失" in msg
+    assert "EASYSTORE_ACCESS_TOKEN" in msg
+
+
 def test_transport_errors_also_include_the_url():
     url = "https://nope.easy.co/api/3.0/store.json"
     msg = handle_api_error(httpx.ConnectError("nope"), "store", url)

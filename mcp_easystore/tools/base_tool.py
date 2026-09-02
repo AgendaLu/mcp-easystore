@@ -33,10 +33,16 @@ def handle_api_error(e: Exception, context: str = "", url: str = "") -> str:
             msg = body.get("error", {}).get("message", e.response.text[:200])
         except Exception:
             msg = e.response.text[:200]
+        # 401 與 403 的分工是實測出來的，不是照 HTTP 語意猜的：
+        # 對 /store.json 打，沒帶 header 或帶空字串 → 401；帶了一個無效的權杖 → 403
+        # permission_denied。所以 403 不等於「scope 不夠」，權杖打錯也是它，訊息兩個都要講。
         if status == 401:
-            return f"{prefix}Error 401: Access Token 無效或缺失，請確認 EASYSTORE_ACCESS_TOKEN。{suffix}"
+            return f"{prefix}Error 401: 請求沒帶到 Access Token，請確認 EASYSTORE_ACCESS_TOKEN 有設定且不是空值。{suffix}"
         if status == 403:
-            return f"{prefix}Error 403: 權限不足，請確認 App 的 scope 包含所需資源。{suffix}"
+            return (
+                f"{prefix}Error 403: 權杖無效、已重新產生，或客製擴充的存取範疇（scope）不含此資源。"
+                f"讀取工具正常、只有寫入回 403 就是範疇問題；全部都 403 多半是權杖本身。{suffix}"
+            )
         if status == 404:
             return (
                 f"{prefix}Error 404: 商店不存在或已停用（請確認 EASYSTORE_SHOP_URL 指到的商店還在），"
