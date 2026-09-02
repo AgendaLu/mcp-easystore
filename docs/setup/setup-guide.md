@@ -12,6 +12,153 @@
 
 ---
 
+## 讓 AI 幫你裝（在 Claude Code 裡）
+
+不想自己讀完整份文件的話，在 Claude Code 開一個對話，貼這句：
+
+```
+讀 docs/setup/setup-guide.md，照「給 AI 代理的安裝 runbook」那一節幫我把 easystore MCP 裝好。
+權杖我自己填，不要問我要。
+```
+
+**權杖全程不進對話。** AI 只會把設定檔的骨架寫好、權杖欄位留一個佔位字串，然後告訴你哪個檔案的第幾行要改；真正的權杖由你在文字編輯器裡貼上、存檔，AI 從頭到尾看不到它。
+
+你要自己做的三件事——**AI 做不到，別等它**：
+
+1. **去 EasyStore 後台拿權杖**（見步驟 1）。權杖只顯示一次。
+2. **改檔案之前，先把所有 Claude 程式完全關掉**（Desktop 用 Cmd+Q，關視窗不算；Cowork、terminal 的 `claude`、Claude Code 一起關）。這些程式跑著的時候會自己回寫設定檔，你存的檔會被覆蓋掉。
+3. 用文字編輯器貼上權杖、存檔，再把 Claude 打開。
+
+---
+
+## 給 AI 代理的安裝 runbook
+
+> 這節是給 AI 照著執行的。
+>
+> **鐵則一：不要向使用者索取權杖，不要讓權杖出現在任何指令、檔案寫入內容或對話裡。** 使用者主動貼過來也要提醒他那已經進了對話紀錄，建議回後台重新產生。你只寫佔位字串 `PASTE_YOUR_TOKEN_HERE`。
+>
+> **鐵則二：你不能替使用者填權杖，也不能在使用者編輯設定檔的期間繼續操作那個檔案。** 寫完骨架就交棒，等使用者關掉 Claude、改完、重開，再繼續驗收。
+
+**步驟 0 — 先問清楚，不要猜**
+
+① 要裝哪些介面：Cowork / Desktop 一般聊天 → `claude_desktop_config.json`；terminal 的 `claude` / Claude Code → `~/.claude.json`。兩邊都要用就兩份都寫。
+② 要不要開寫入工具（取消訂單、退款、改價）——預設 `"false"`。
+③ 商店網址（**這個不是機密，可以在對話裡講**）。權杖不要問。
+
+使用者還沒去後台拿權杖 → 請他先照步驟 1 拿，但你可以先把骨架寫好，不用等。
+
+**步驟 1 — uv**
+
+```bash
+which uvx || brew install uv
+```
+
+記下 `which uvx` 的**絕對路徑**（多半是 `/opt/homebrew/bin/uvx`）。設定檔要用絕對路徑，寫 `"uvx"` 會在 Desktop 從 GUI 啟動時 spawn 失敗。
+
+**步驟 2 — 寫設定檔骨架（權杖留佔位字串）**
+
+*Claude Desktop / Cowork*，目標檔（macOS）`~/Library/Application Support/Claude/claude_desktop_config.json`、（Windows）`%APPDATA%\Claude\claude_desktop_config.json`：
+
+檔案存在 → **先 Read，再把 `easystore` 併進既有的 `mcpServers`**。裡面通常還有 `preferences`、`coworkUserFilesPath` 和別的 server，整份覆蓋會把使用者其他設定砍掉。檔案不存在才新建。
+
+```json
+{
+  "mcpServers": {
+    "easystore": {
+      "command": "/opt/homebrew/bin/uvx",
+      "args": ["--from", "git+https://github.com/AgendaLu/mcp-easystore", "mcp-easystore"],
+      "env": {
+        "EASYSTORE_SHOP_URL": "https://yourshop.easy.co",
+        "EASYSTORE_ACCESS_TOKEN": "PASTE_YOUR_TOKEN_HERE",
+        "ENABLE_WRITE_TOOLS": "false"
+      }
+    }
+  }
+}
+```
+
+*terminal CLI / Claude Code*，同樣先用佔位字串（**別把真權杖打進指令，那會留在 shell history 和對話紀錄**）：
+
+```bash
+claude mcp add easystore --scope user \
+  -e EASYSTORE_SHOP_URL=https://yourshop.easy.co \
+  -e EASYSTORE_ACCESS_TOKEN=PASTE_YOUR_TOKEN_HERE \
+  -e ENABLE_WRITE_TOOLS=false \
+  -- uvx --from git+https://github.com/AgendaLu/mcp-easystore mcp-easystore
+```
+
+這份寫進 `~/.claude.json`，**Cowork 讀不到**——Cowork 只看 Desktop 那份。
+
+寫完驗一次 JSON 合法：`python3 -m json.tool <檔案> >/dev/null`。三個高頻錯誤：`env` 的值必須是**字串**（`"false"` 不是 `false`）、不能有尾逗號與註解、`command` 要絕對路徑。
+
+**步驟 3 — 查出佔位字串在第幾行，交給使用者**
+
+```bash
+grep -n "PASTE_YOUR_TOKEN_HERE" "$HOME/Library/Application Support/Claude/claude_desktop_config.json" "$HOME/.claude.json"
+```
+
+把結果整理成一份交棒說明，**每個要改的檔案都要有絕對路徑 + 行號 + 要找的字串**，例如：
+
+> 骨架寫好了，剩下權杖要你自己填。照這個順序做：
+>
+> 1. **先把 Claude 全部關掉**：Claude Desktop 按 Cmd+Q（關視窗不算）、Cowork 關掉、這個 Claude Code 對話也結束。程式跑著的時候會回寫設定檔，你存的檔會被蓋掉。
+> 2. 用文字編輯器（TextEdit、VS Code、`nano` 都行）開啟
+>    `/Users/你/Library/Application Support/Claude/claude_desktop_config.json`
+> 3. 找到**第 7 行**：`"EASYSTORE_ACCESS_TOKEN": "PASTE_YOUR_TOKEN_HERE",`
+>    把 `PASTE_YOUR_TOKEN_HERE` 換成後台的權杖，**兩邊的雙引號要留著**，逗號也留著。
+> 4. 存檔（Cmd+S）。用 TextEdit 的話確認是純文字模式，不要存成 RTF。
+> 5. 再打開 Claude Desktop。
+
+有兩份設定檔就兩份都列，並提醒兩份都要改。
+
+**步驟 4 — 停手**
+
+交棒說明給完就停，不要再碰那些檔案，也不要「順便幫忙確認一下」——使用者存檔期間你只要有任何一個工具去寫那個檔案，就可能蓋掉他剛貼上的權杖。等他回報改完了再往下。
+
+**步驟 5 — 驗收（權杖依然不進對話）**
+
+重開 Claude 之後，請使用者在自己的終端機跑這段。它從設定檔讀權杖去打 API，**只印狀態碼與店名，不印權杖**：
+
+```bash
+python3 - <<'EOF'
+import json, pathlib, sys, urllib.request, urllib.error
+p = pathlib.Path.home() / "Library/Application Support/Claude/claude_desktop_config.json"
+try:
+    env = json.loads(p.read_text())["mcpServers"]["easystore"]["env"]
+except FileNotFoundError:
+    sys.exit("找不到設定檔：%s" % p)
+except json.JSONDecodeError as e:
+    sys.exit("JSON 壞了（多半是尾逗號或引號沒收）：第 %d 行 %s" % (e.lineno, e.msg))
+except KeyError as k:
+    sys.exit("設定檔裡沒有 mcpServers.easystore.env 這一段（%s）" % k)
+tok, url = env.get("EASYSTORE_ACCESS_TOKEN", ""), env.get("EASYSTORE_SHOP_URL", "").rstrip("/")
+if not tok or "PASTE" in tok:
+    sys.exit("權杖還是佔位字串，沒改到。回編輯器確認有存檔（或存檔被跑著的 Claude 蓋掉了）。")
+req = urllib.request.Request(url + "/api/3.0/store.json", headers={"EasyStore-Access-Token": tok})
+try:
+    with urllib.request.urlopen(req, timeout=10) as r:
+        d = json.load(r)["store"]
+        print("200 OK 商店：%s（easystore_domain=%s）" % (d.get("name"), d.get("easystore_domain")))
+        print("權杖長度 %d" % len(tok))
+except urllib.error.HTTPError as e:
+    sys.exit("%d %s" % (e.code, {404: "商店網址錯，不是權杖問題",
+                                 403: "權杖無效、已重新產生，或存取範疇不足",
+                                 401: "設定檔裡根本沒帶到權杖"}.get(e.code, "")))
+EOF
+```
+
+`200 OK` 且店名正確才算過。沒過就照訊息回頭修，別急著往下。
+
+接著在 Cowork（或裝了的那個介面）呼叫 `easystore_diagnose`，**這些全部成立才算裝好**：
+
+- `store_probe.http_status` = `200`、`store_name` 是使用者的店名
+- `config.shop_url` 是預期的網域，且沒有 domain 不一致警告
+- `tools.total` = `60`（未開寫入）或 `101`（`write_tools_loaded` = 41）
+
+工具清單裡看不到 `easystore_*` → 幾乎都是設定只寫進了 `~/.claude.json`。往下看「故障排除」。
+
+---
+
 ## 步驟 1：取得 EasyStore API 權杖
 
 依 [EasyStore 官方說明](https://support.easystore.co/zh-tw/article/easystore-api-1amargb/)：
@@ -33,8 +180,6 @@
 只想查資料就給讀取範疇、`ENABLE_WRITE_TOOLS` 維持 `false`。要用取消訂單、退款、批次改價這些操作，兩邊都得打開（41 個寫入工具，總計 101 個）。
 
 > 權杖只在儲存當下顯示一次，遺失就重新產生。外洩時也是回這個頁面重新產生，舊的立刻失效。
-
----
 
 ---
 
@@ -66,7 +211,9 @@
 curl -s -o /dev/null -w "%{http_code}\n" -H "EasyStore-Access-Token: 你的權杖" https://你的商店.easy.co/api/3.0/store.json
 ```
 
-`200` 才寫進設定檔。`404` 是商店網址錯（不是權杖問題），`401` 是網址對但權杖錯。
+`200` 才寫進設定檔。`404` 是商店網址錯（不是權杖問題）；`403` 是網址對、**權杖錯或範疇不足**；`401` 是 header 根本沒帶到權杖（打錯變數名、值是空字串）。
+
+> 別照 HTTP 語意直覺去猜這兩個碼。實測 EasyStore：**帶了一個錯的權杖回 403，不是 401**；401 只出現在完全沒帶 header 或帶空字串的時候。
 
 裝好之後改用 `easystore_diagnose`：它會回報生效的網址、實際的 `easystore_domain`，兩者不一致時直接給出警告。
 
@@ -359,15 +506,20 @@ EASYSTORE_SHOP_URL = https://yourshop.easy.co  # ✗
 
 跑 `easystore_diagnose` 確認生效的商店網址，以及 `/store.json` 的實際 HTTP 狀態碼。
 
-### 401 Access Token 無效
+### 401：請求沒帶到權杖
 
-1. 權杖打錯或已重新產生 → 回後台客製擴充頁面確認
-2. 客製擴充被刪除 → 重建
-3. `EASYSTORE_SHOP_URL` 網址寫錯
+401 **不是**「權杖錯」——是 header 根本沒帶到值。實測 EasyStore：沒帶 header 或帶空字串才回 401，帶了一個錯的權杖回的是 403。
 
-### 403 但讀取工具正常
+所以看到 401 要查的是「設定有沒有讀到」，不是「權杖對不對」：變數名打錯、值是空字串、設定寫進了不生效的檔案。跑 `easystore_diagnose` 看 `config.sources`，它會直接說每個變數來自哪裡。
 
-客製擴充的**存取範疇**沒給寫入權限。回步驟 1 調整範疇後儲存。
+### 403：權杖錯，或存取範疇不足
+
+兩種原因共用同一個碼，用「哪些工具會壞」來分辨：
+
+| 症狀 | 原因 |
+|---|---|
+| 連讀取工具都 403 | 權杖本身無效——打錯、已重新產生、客製擴充被刪掉 |
+| 讀取正常、只有寫入回 403 | 客製擴充的**存取範疇**沒給寫入權限，回步驟 1 調整範疇後儲存 |
 
 ### 寫入工具沒出現
 

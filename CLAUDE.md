@@ -42,7 +42,11 @@ Cowork 沒有自己的 MCP 設定介面，用的是 Desktop 已註冊的本機 s
 
 **`EASYSTORE_SHOP_URL` 的正確值**是 `/store.json` 回應裡的 `easystore_domain`（例如 `https://yourshop.easy.co`）。`easystore.co` 是 EasyStore 官網，不是店家網域。
 
-**排查一律從 `easystore_diagnose` 開始**，不要用猜的——它回報生效的商店網址、每個變數的來源、權杖指紋（無明文）、載入工具數，並實打一次 `/store.json`。症狀對照：404 → shop URL 指向不存在的商店（錯誤訊息尾端有實際請求的 URL）；401 → 權杖；讀取正常但寫入 403 → 後台存取範疇；改了設定沒反應 → 看 `config.sources` 確認改到的是不是生效的那份。
+**排查一律從 `easystore_diagnose` 開始**，不要用猜的——它回報生效的商店網址、每個變數的來源、權杖指紋（無明文）、載入工具數，並實打一次 `/store.json`。症狀對照：404 → shop URL 指向不存在的商店（錯誤訊息尾端有實際請求的 URL）；403 → 權杖無效**或**存取範疇不足（用「讀取正常但寫入壞」來分辨後者）；401 → header 根本沒帶到權杖，查設定有沒有讀到而不是查權杖對不對；改了設定沒反應 → 看 `config.sources` 確認改到的是不是生效的那份。
+
+> 401/403 的分工是實測的，別照 HTTP 語意猜：帶了錯的權杖回 **403**（`permission_denied`），401 只出現在沒帶 header 或帶空字串時。改 `handle_api_error` 的訊息會被 `tests/test_diagnostics.py` 擋。
+
+**設定檔權杖不進對話**：引導使用者裝設時，寫 `PASTE_YOUR_TOKEN_HERE` 佔位字串 + 回報檔案絕對路徑與行號，讓使用者自己在編輯器填、存檔——且**必須先完全關掉所有 Claude 程式**，跑著的 client 會回寫設定檔蓋掉手改內容。流程見 setup-guide 的「給 AI 代理的安裝 runbook」。
 
 完整流程見 [README.md](README.md) 的「快速開始」與「出錯了怎麼查」，細節見 [docs/setup/setup-guide.md](docs/setup/setup-guide.md)。
 
